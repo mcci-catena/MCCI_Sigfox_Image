@@ -33,6 +33,8 @@ extern "C" {
 // to keep the image library as thin as possible, but it really depends
 // on the contents.
 
+#include <sigfox_api.h>
+
 #ifdef __cplusplus
 }
 #endif
