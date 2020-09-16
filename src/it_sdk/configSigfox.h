@@ -44,9 +44,6 @@
 // +------------SIGFOX-------------|--------------------------------------|---------------------------------------|
 #if ITSDK_WITH_SIGFOX_LIB == __ENABLE
 #define ITSDK_SIGFOX_ENCRYPTION		(   __PAYLOAD_ENCRYPT_NONE          \
-  									  | __PAYLOAD_ENCRYPT_AESCTR 		\
-									  | __PAYLOAD_ENCRYPT_SPECK 		\
-								/*	  | __PAYLOAD_ENCRYPT_SIGFOX   */   \
 									)										// Encryption code activated
 
 #define ITSDK_SIGFOX_MEM_SIZE		256										// Static memory allocated to sigfox

@@ -15,3 +15,20 @@ uint64_t itsdk_time_get_ms() {
 	__last_millis = m;
 	return __loops_millis << 32 + m;
 }
+
+
+
+/**
+ * Key protection not use
+ * So this is basically do nothing
+ */
+void itsdk_encrypt_cifferKey(uint8_t * key, int len) {
+
+}
+
+/**
+ * Un protect inMemory key.
+ */
+void itsdk_encrypt_unCifferKey(uint8_t * key, int len) {
+	itsdk_encrypt_cifferKey(key,len);
+}

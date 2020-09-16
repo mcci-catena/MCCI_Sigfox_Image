@@ -17,6 +17,7 @@
 #define ITSDK_SIGFOX_LIB 			__SIGFOX_SX1276
 #define ITSDK_PLATFORM				__PLATFORM_STM32L0
 #define ITSDK_CONFIGURATION_MODE	__CONFIG_STATIC							// Update it later
+#define ITSDK_LORAWAN_ENCRYPTION	__PAYLOAD_ENCRYPT_NONE
 #define ITSDK_WITH_SECURESTORE		__DISABLE
 #define ITSDK_SIGFOX_NVM_SOURCE		__SFX_NVM_NONE
 
@@ -25,6 +26,7 @@
 #define ITSDK_WITH_ERROR_EXTENTION	__DISABLE								//  Add an application extension for error code in configError.h file
 #define ITSDK_ERROR_BLOCKS			4										//  Max number of error block / 1 block stores 1 error and needs 8 Byte for storage.
 																			//  The first block is header
+
 
 #define ITSDK_WITH_SPI				__SPI_ENABLED							// Use SPI (inludes the strutures)
 #define ITSDK_SPI_HANDLER_TYPE		SPI_HandleTypeDef						// The name of the Spi structure to be used for the targeted MCU
