@@ -26,6 +26,7 @@
 #define ITSDK_WITH_ERROR_EXTENTION	__DISABLE								//  Add an application extension for error code in configError.h file
 #define ITSDK_ERROR_BLOCKS			4										//  Max number of error block / 1 block stores 1 error and needs 8 Byte for storage.
 																			//  The first block is header
+#define ITSDK_WITH_GPIO_HANDLER		__DISABLE								// Disable the internal GPIO Handler, when disable you need to map it manually
 
 
 #define ITSDK_WITH_SPI				__SPI_ENABLED							// Use SPI (inludes the strutures)

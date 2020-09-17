@@ -30,9 +30,6 @@
 #include <it_sdk/config.h>
 #if ( ITSDK_WITH_SIGFOX_LIB == __ENABLE ) && (ITSDK_SIGFOX_LIB == __SIGFOX_SX1276)
 
-// Hardware layer
-SPI_HandleTypeDef hspi1;
-DMA_HandleTypeDef hdma_spi1_tx;
 
 #include <it_sdk/itsdk.h>
 #include <it_sdk/sigfox/sigfox.h>
@@ -92,6 +89,7 @@ void itsdk_leaveCriticalSection() {
 
 // State
 itsdk_state_t itsdk_state = {0};
+itsdk_configuration_nvm_t itsdk_config = { 0 };
 
 
 // helper to get the Rc
@@ -136,7 +134,7 @@ static uint8_t _itsdk_sigfox_getTxPower() {
  * Return the default speed according to the RC
  */ 
 static uint16_t _itsdk_sigfox_getSpeed() {
-	switch (itsdk_sigfox_getRc()) {
+	switch (_itsdk_sigfox_getRc()) {
 		case SIGFOX_RCZ1:
 		case SIGFOX_RCZ3C:
 		case SIGFOX_RCZ5:
@@ -167,8 +165,6 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	     || api->getDeviceId == NULL
 	     || api->getInitialPac == NULL
 	     || api->getDeviceKey == NULL
-	     || api->getCurrentSeqId == NULL
-	     || api->setCurrentSeqId == NULL
 	     || api->getTxPower == NULL
 	) {
 		return SIGFOX_INIT_FAILED;
@@ -240,12 +236,10 @@ itdsk_sigfox_txrx_t itsdk_sigfox_sendFrame(
 
 	#if ( ITSDK_SIGFOX_ENCRYPTION & __PAYLOAD_ENCRYPT_SIGFOX)
 	if ( (encrypt & PAYLOAD_ENCRYPT_SIGFOX) == 0 ) {
-		log_error("[Sigfox] Sigfox ITSDK_SIGFOX_ENCRYPTION must be set as encryption has been activated\r\n");
 		return SIGFOX_TXRX_ERROR;
 	}
 	#else
 	if ( (encrypt & PAYLOAD_ENCRYPT_SIGFOX) != 0 ) {
-		log_error("[Sigfox] Sigfox ITSDK_SIGFOX_ENCRYPTION can't be set until encryption has been activated\r\n");
 		return SIGFOX_TXRX_ERROR;
 	}
 	#endif

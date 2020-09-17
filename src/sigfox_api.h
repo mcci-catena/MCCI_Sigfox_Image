@@ -42,10 +42,6 @@ typedef struct {
 	uint8_t (*getInitialPac)(uint8_t * pac);
 	// Return the KEY parameter: a 16 Bytes array, buffer is provided by the caller
 	uint8_t (*getDeviceKey)(uint8_t * key);
-	// Return current value of the SeqId
-	uint8_t (*getCurrentSeqId)(uint16_t * seqId);
-	// Change the value of the seqId
-	uint8_t (*setCurrentSeqId)(uint16_t seqId);
 	// Return the Tx power (-127 for zone default)
 	uint8_t (*getTxPower)(int8_t * power);
 } sigfox_api_t;

@@ -1,9 +1,48 @@
+/* ==========================================================
+ * arduino_wrapper.c - Function to wrap itsdk to arduino env
+ * Project : Disk91 SDK
+ * ----------------------------------------------------------
+ * Created on: 15 set. 2020
+ *     Author: Paul Pinault aka Disk91
+ * ----------------------------------------------------------
+ * Copyright (C) 2018 Disk91
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU LESSER General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * ----------------------------------------------------------
+ * 
+ *
+ * ==========================================================
+ */
+
 #include <it_sdk/config.h>
+#include <it_sdk/sigfox/sigfox.h>
 #include <it_sdk/wrappers.h>
+#include <drivers/sigfox/sigfox_api.h>
 
 // wait for a given number of Ms
 void itsdk_delayMs(uint32_t ms) {
 	delay(ms);
+}
+
+/**
+ * wait for a given time in Ms switching the MCU in low power mode during that time
+ * You can also decide to stay Up, this is a couple of seconds of saving on callback
+ * and a potential 1s saving during uplink.
+ *  @TODO
+ * */
+uint32_t lowPower_delayMs(uint32_t duration) {
+	delay(duration);
 }
 
 // get the time in ms since start with 32b millis overflow management
@@ -17,7 +56,6 @@ uint64_t itsdk_time_get_ms() {
 }
 
 
-
 /**
  * Key protection not use
  * So this is basically do nothing
@@ -27,8 +65,194 @@ void itsdk_encrypt_cifferKey(uint8_t * key, int len) {
 }
 
 /**
- * Un protect inMemory key.
+ * Unprotect inMemory key.
  */
 void itsdk_encrypt_unCifferKey(uint8_t * key, int len) {
 	itsdk_encrypt_cifferKey(key,len);
 }
+
+/**
+ * @TODO
+ * Get the internal VCC in mV
+ * This is mandatory for OOB frame confirming downlink, according to the Sigfox protocol
+ */
+uint16_t adc_getVdd() {
+	return 3300;
+}
+
+/**
+ * @TODO
+ * Get the temperature (car be internal MCU Temp) scale 0.01 °C
+ * This is mandatory for OOB frame confirming downlink, according to the Sigfox protocol
+ */
+int16_t adc_getTemperature() {
+	return 2000;
+}
+
+/** ==============================================================================================
+ * NVM access - Sigfox API needs 4+5 Bytes of NVM memory to store some internal data including the
+ * Sequence Id
+ * As STM32 only supports 32b alignement for eeprom R/W, the real space occupied is 4+8 = 12 BYTES
+ * The following functions are needed to support this requirement
+ */
+
+/**
+ * Return the offset of the NVM area for Sigfox Secure Element
+ */
+itsdk_sigfox_init_t itsdk_sigfox_getSeNvmOffset(uint32_t * offset) {
+	itsdk_sigfox_getNvmOffset(offset);
+	int size = itdt_align_32b(SFX_NVMEM_BLOCK_SIZE);
+	*offset += size;
+	return SIGFOX_INIT_SUCESS;
+}
+
+/**
+ * Return the offset of the NVM area for Sigfox
+ */
+itsdk_sigfox_init_t itsdk_sigfox_getNvmOffset(uint32_t * offset) {
+	*offset = 0;
+	return SIGFOX_INIT_SUCESS;
+}
+
+/**
+ * Align a value on the next 32b value
+ * This is for NVM size whare offset need to be aligned
+ * on 32b values
+ */
+uint32_t itdt_align_32b(uint32_t v) {
+	if ( (v & 3) != 0 ) {
+		v &= 0xFFFFFFFC;
+		v += 4;
+	}
+	return v;
+}
+
+
+// Mocked version
+static uint8_t __fakeNvm[12];
+
+/**
+ * Read the NVM, Bank will be 0, offset will start at 0 and offset+len will be in the
+ * 0..12 NVM buffer expected by the sigfox library.
+ * The result is a byte stream in data array passed by the caller. It reads len Byte
+ * @TODO
+ * */
+bool _eeprom_read(uint8_t bank, uint32_t offset, void * data, int len) {
+	
+	uint8_t  * _data = (uint8_t *)data;
+	// mock = use ram to store it
+	for ( int i = 0 ; i < len ; i++ ) {
+		_data[i] = __fakeNvm[offset+i];
+	}
+
+}
+
+/**
+ * Write the NVM, Bank will be 0, offset will start at 0 and offset+len will be in the
+ * 0..12 NVM buffer expected by the sigfox library.
+ * As a result the Byte stream in data array will be written innNVM
+ * @TODO
+ * */
+bool _eeprom_write(uint8_t bank, uint32_t offset, void * data, int len) {
+
+	uint8_t  * _data = (uint8_t *)data;
+	// mock = use ram to store it
+	for ( int i = 0 ; i < len ; i++ ) {
+		__fakeNvm[offset+i] = _data[i];
+	}
+
+}
+
+
+/** ***********************************************************************************
+ *  HARDWARE INIT
+ *  NEEDED IRQ HANDLER @TODO
+ *  - DMA1_Channel2_3_IRQHandler(void)
+ *  - GPIO - need to call void gpio_Callback(uint16_t GPIO_Pin) and clear irqs
+ * */
+// Hardware layer
+SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_tx;
+
+
+/**
+ * Resume the SPI configuration
+ * */
+void MX_SPI1_Init(void)
+{
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 7;
+  HAL_SPI_Init(&hspi1);
+}
+
+/**
+ * Init the harwdare related to Sigfox stack
+ * */
+void init_hardware(void) {
+
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+
+  MX_SPI1_Init();
+
+  // @TODO Paul
+  // - Init du hardware complet
+
+}
+
+
+void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	if(spiHandle->Instance==SPI1)
+    {
+		__HAL_RCC_SPI1_CLK_ENABLE();
+		
+		__HAL_RCC_GPIOB_CLK_ENABLE();
+		__HAL_RCC_GPIOA_CLK_ENABLE();
+		/**SPI1 GPIO Configuration    
+			 PB3     ------> SPI1_SCK
+			PA7     ------> SPI1_MOSI
+			PA6     ------> SPI1_MISO 
+		*/
+		GPIO_InitStruct.Pin = GPIO_PIN_3;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+		GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+		HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+		GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_6;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+		GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+		HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+		/* SPI1 DMA Init */
+		/* SPI1_TX Init */
+		hdma_spi1_tx.Instance = DMA1_Channel3;
+		hdma_spi1_tx.Init.Request = DMA_REQUEST_1;
+		hdma_spi1_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
+		hdma_spi1_tx.Init.PeriphInc = DMA_PINC_DISABLE;
+		hdma_spi1_tx.Init.MemInc = DMA_MINC_ENABLE;
+		hdma_spi1_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+		hdma_spi1_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+		hdma_spi1_tx.Init.Mode = DMA_NORMAL;
+		hdma_spi1_tx.Init.Priority = DMA_PRIORITY_LOW;
+		HAL_DMA_Init(&hdma_spi1_tx);
+		__HAL_LINKDMA(spiHandle,hdmatx,hdma_spi1_tx);
+	}
+}
+
