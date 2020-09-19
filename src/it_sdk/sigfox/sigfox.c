@@ -111,6 +111,9 @@ static uint16_t _itsdk_sigfox_getSpeed() {
  */
 itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	__api = api;
+	#if ITSDK_LOGGER_CONF > 0
+	log_init(ITSDK_LOGGER_CONF);
+	#endif
 	log_info("OK\r\n");
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_setup\r\n"));
 
