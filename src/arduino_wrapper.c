@@ -2,7 +2,7 @@
  * arduino_wrapper.c - Function to wrap itsdk to arduino env
  * Project : Disk91 SDK
  * ----------------------------------------------------------
- * Created on: 15 set. 2020
+ * Created on: 15 sept. 2020
  *     Author: Paul Pinault aka Disk91
  * ----------------------------------------------------------
  * Copyright (C) 2018 Disk91
@@ -25,10 +25,27 @@
  * ==========================================================
  */
 
-#include <it_sdk/config.h>
-#include <it_sdk/sigfox/sigfox.h>
-#include <it_sdk/wrappers.h>
+#include <it_sdk/itsdk.h>
 #include <drivers/sigfox/sigfox_api.h>
+#include <it_sdk/eeprom/sdk_state.h>
+#include <it_sdk/eeprom/sdk_config.h>
+#include <it_sdk/logger/error.h>
+
+/** ==============================================================================================
+ * ITSDK configuration and state.
+ * Some of these structures are needed by the Sifgoc driver.
+ */
+// State
+itsdk_state_t itsdk_state = {0};
+itsdk_configuration_nvm_t itsdk_config = { 0 };
+// functions wrapper from the end-user level
+sigfox_api_t * __api = NULL;
+
+
+/** ==============================================================================================
+ * TIME function
+ * Implement the needed time function
+ */
 
 // wait for a given number of Ms
 void itsdk_delayMs(uint32_t ms) {
@@ -56,20 +73,28 @@ uint64_t itsdk_time_get_ms() {
 }
 
 
-/**
- * Key protection not use
- * So this is basically do nothing
+/** ==============================================================================================
+ * Internal key protection
+ * Usually in ITSDK, the keys are not manipulated in clear test, so there are some just in time
+ * decryption function in addition of a stronger encrypted storage. 
+ * Here we do not have this feature so the function just do nothing.
  */
+
+// Encrypt a given key
 void itsdk_encrypt_cifferKey(uint8_t * key, int len) {
 
 }
 
-/**
- * Unprotect inMemory key.
- */
+// Decryt the given key ( usually this is a simple encryption revesible by the same operation)
 void itsdk_encrypt_unCifferKey(uint8_t * key, int len) {
 	itsdk_encrypt_cifferKey(key,len);
 }
+
+
+/** ==============================================================================================
+ * MCU sensors
+ * Sigfox libs requires some information from the usual MCU sensors
+ */
 
 /**
  * @TODO
@@ -163,6 +188,72 @@ bool _eeprom_write(uint8_t bank, uint32_t offset, void * data, int len) {
 
 }
 
+/** ***********************************************************************************
+ *  ERROR TRACING
+ *  In a normal case, this should write an error where ever you want - in itsdk it's written
+ *  in the NVM for later investigation but it can be written in the console.
+ *  Fatal error is infinite loop, subject to watchdog and reboot.
+ * */
+
+// Some missing functions
+itsdk_error_ret_e itsdk_error_noreport(uint32_t error) {
+	if ( (error & ITSDK_ERROR_LEVEL_FATAL ) == ITSDK_ERROR_LEVEL_FATAL ) while(1);
+	return ITSDK_ERROR_SUCCESS;
+}
+
+
+/** ***********************************************************************************
+ *  CRITICAL SECTION
+ *  Disable interrupt when entering in a critical section
+ * */
+
+/**
+ * Get the IRQ Mask
+ */
+uint32_t itsdk_getIrqMask() {
+	return __get_PRIMASK();
+}
+
+/**
+ * Set / Restore the IRQ Mask
+ */
+void itsdk_setIrqMask(uint32_t mask) {
+	__set_PRIMASK(mask);
+}
+/**
+ * Enter a critical section / disable interrupt
+ */
+static uint32_t __interrupt_mask;
+void itsdk_enterCriticalSection() {
+	__interrupt_mask = itsdk_getIrqMask();
+	//__disable_irq();
+	__set_PRIMASK(1);	// allows to capture but not execute the interruption appearing during the critical section execution
+}
+
+/**
+ * Restore the initial irq mask
+ * to leave a critical secqtion
+ */
+void itsdk_leaveCriticalSection() {
+	itsdk_setIrqMask(__interrupt_mask);
+}
+
+/** ***********************************************************************************
+ *  LOG MANAGEMENT
+ *  Assuming only one function will be used to manage the logging (debug)
+ *  Other are just declared empty
+ * */
+
+void serial1_print(char * msg) {}
+void serial2_print(char * msg) {}
+
+/**
+ * Print a debug/info/warn/fatal message
+ * MOCKED? - use a callback function from the end-user level
+ * */
+void debug_print(debug_print_type_e lvl, char * msg) {
+	if ( __api != NULL && __api->printLog != NULL ) __api->printLog(msg);
+}
 
 /** ***********************************************************************************
  *  HARDWARE INIT

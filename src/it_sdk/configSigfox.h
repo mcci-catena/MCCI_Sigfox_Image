@@ -98,8 +98,8 @@
 #define ITSDK_SX1276_RESET_PIN		 		__LP_GPIO_0
 #define ITSDK_SX1276_NSS_BANK		 		__BANK_A					   // SX1276 GPIO FOR Activating Low Slave Select NSS
 #define ITSDK_SX1276_NSS_PIN		 		__LP_GPIO_15
-#define ITSDK_SX1276_TCXO_VCC_BANK	 		__BANK_A					   // SX1276 GPIO FOR Activating TCXO
-#define ITSDK_SX1276_TCXO_VCC_PIN	 		__LP_GPIO_12
+//#define ITSDK_SX1276_TCXO_VCC_BANK	 		__BANK_A					   // SX1276 GPIO FOR Activating TCXO
+//#define ITSDK_SX1276_TCXO_VCC_PIN	 		__LP_GPIO_12
 #define ITSDK_SX1276_DIO_0_BANK	 	 		__BANK_B					   // SX1276 GPIO 0 => Rx/Tx Done interrupt
 #define ITSDK_SX1276_DIO_0_PIN	 	 		__LP_GPIO_4
 #define ITSDK_SX1276_DIO_1_BANK	 	 		__BANK_B					   // SX1276 GPIO 1 => Rx Timeout interrupt
@@ -108,10 +108,10 @@
 #define ITSDK_SX1276_DIO_2_PIN	 	 		__LP_GPIO_0
 #define ITSDK_SX1276_DIO_3_BANK	 	 		__BANK_C					   // SX1276 GPIO 3 => cadDone/ValidHeader/Crc Error
 #define ITSDK_SX1276_DIO_3_PIN	 	 		__LP_GPIO_13
-#define ITSDK_SX1276_DIO_4_BANK	 	 		__BANK_A					   // SX1276 GPIO 4 => CAD Detected / Pll lock
-#define ITSDK_SX1276_DIO_4_PIN	 	 		__LP_GPIO_5
-#define ITSDK_SX1276_DIO_5_BANK	 	 		__BANK_A					   // SX1276 GPIO 5 => Mode Ready / Clk out
-#define ITSDK_SX1276_DIO_5_PIN	 	 		__LP_GPIO_4
+//#define ITSDK_SX1276_DIO_4_BANK	 	 		__BANK_A					   // SX1276 GPIO 4 => CAD Detected / Pll lock
+//#define ITSDK_SX1276_DIO_4_PIN	 	 		__LP_GPIO_5
+//#define ITSDK_SX1276_DIO_5_BANK	 	 		__BANK_A					   // SX1276 GPIO 5 => Mode Ready / Clk out
+//#define ITSDK_SX1276_DIO_5_PIN	 	 		__LP_GPIO_4
 #define ITSDK_MURATA_ANTSW_RX_BANK 	     	__BANK_A					   // MURATA ANTENNA SWITCH RX
 #define ITSDK_MURATA_ANTSW_RX_PIN	     	__LP_GPIO_1
 #define ITSDK_MURATA_ANTSW_TXBOOST_BANK  	__BANK_C					   // MURATA TX POWER BOOST

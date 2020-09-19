@@ -44,52 +44,7 @@
 
 #include <drivers/sx1276/sigfox_sx1276.h>
 #include <drivers/sigfox/mcu_api.h>
-#include <sigfox_api.h>
-
-static sigfox_api_t * __api;
-
-
-// Some missing functions
-itsdk_error_ret_e itsdk_error_noreport(uint32_t error) {
-	if ( (error & ITSDK_ERROR_LEVEL_FATAL ) == ITSDK_ERROR_LEVEL_FATAL ) while(1);
-	return ITSDK_ERROR_SUCCESS;
-}
-
-/**
- * Get the IRQ Mask
- */
-uint32_t itsdk_getIrqMask() {
-	return __get_PRIMASK();
-}
-
-/**
- * Set / Restore the IRQ Mask
- */
-void itsdk_setIrqMask(uint32_t mask) {
-	__set_PRIMASK(mask);
-}
-/**
- * Enter a critical section / disable interrupt
- */
-static uint32_t __interrupt_mask;
-void itsdk_enterCriticalSection() {
-	__interrupt_mask = itsdk_getIrqMask();
-	//__disable_irq();
-	__set_PRIMASK(1);	// allows to capture but not execute the interruption appearing during the critical section execution
-}
-
-/**
- * Restore the initial irq mask
- * to leave a critical secqtion
- */
-void itsdk_leaveCriticalSection() {
-	itsdk_setIrqMask(__interrupt_mask);
-}
-
-
-// State
-itsdk_state_t itsdk_state = {0};
-itsdk_configuration_nvm_t itsdk_config = { 0 };
+#include <arduino_wrapper.h>
 
 
 // helper to get the Rc
@@ -155,6 +110,8 @@ static uint16_t _itsdk_sigfox_getSpeed() {
  * All operation needed to initialize the sigfox stack
  */
 itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
+	__api = api;
+	log_info("OK\r\n");
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_setup\r\n"));
 
 	// Init the state
@@ -169,7 +126,6 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	) {
 		return SIGFOX_INIT_FAILED;
 	}
-	__api = api;
 	uint8_t rcz = _itsdk_sigfox_getRc();
 	if (rcz == 0) return SIGFOX_INIT_FAILED;
 
@@ -405,7 +361,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getTxPower(uint8_t * power) {
 itsdk_sigfox_init_t itsdk_sigfox_setTxSpeed(itdsk_sigfox_speed_t speed) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_setTxSpeed\r\n"));
 	// not yet supported
-	LOG_WARN_SIGFOX(("Sigfox speed change not yet supported"));
+	LOG_WARN_SIGFOXSTK(("Sigfox speed change not yet supported"));
 	return SIGFOX_INIT_NOCHANGE;
 }
 

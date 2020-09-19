@@ -33,7 +33,8 @@ extern "C" {
 // to keep the image library as thin as possible, but it really depends
 // on the contents.
 
-#include <sigfox_api.h>
+#include <it_sdk/itsdk.h>
+#include <arduino_wrapper.h>
 
 #ifdef __cplusplus
 }
