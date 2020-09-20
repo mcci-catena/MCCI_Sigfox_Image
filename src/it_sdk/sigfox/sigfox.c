@@ -115,12 +115,8 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	#if ITSDK_LOGGER_CONF > 0
 	log_init(ITSDK_LOGGER_CONF);
 	#endif
-	log_info("OK\r\n");
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_setup\r\n"));
 
-	// Init hardware
-	init_hardware();
-	
 	// Init the state
 	itsdk_state.activeNetwork = __ACTIV_NETWORK_SIGFOX;
 	if ( itsdk_state.sigfox.initialized ) return SIGFOX_INIT_NOCHANGE;
@@ -136,6 +132,8 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	uint8_t rcz = _itsdk_sigfox_getRc();
 	if (rcz == 0) return SIGFOX_INIT_FAILED;
 
+	// Init hardware
+	init_hardware();
 
 	itsdk_sigfox_init_t ret = SIGFOX_INIT_SUCESS;
 	ret = sx1276_sigfox_init();

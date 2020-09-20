@@ -30,6 +30,7 @@
 #include <it_sdk/eeprom/sdk_state.h>
 #include <it_sdk/eeprom/sdk_config.h>
 #include <it_sdk/logger/error.h>
+#include "interrupt.h"
 
 /** ==============================================================================================
  * ITSDK configuration and state.
@@ -197,6 +198,9 @@ bool _eeprom_write(uint8_t bank, uint32_t offset, void * data, int len) {
 
 // Some missing functions
 itsdk_error_ret_e itsdk_error_noreport(uint32_t error) {
+	log_error("***\r\n");
+	log_error("*** Error 0x%08X ***\r\n",error);
+	log_error("***\r\n");
 	if ( (error & ITSDK_ERROR_LEVEL_FATAL ) == ITSDK_ERROR_LEVEL_FATAL ) while(1);
 	return ITSDK_ERROR_SUCCESS;
 }
@@ -331,7 +335,7 @@ void MX_TIM2_Init(void)
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 0;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  //htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+//  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     while(1);
@@ -369,15 +373,15 @@ void init_hardware(void) {
   // Set analog to not trigger any interrupt before ful configuration
   
   if ( ITSDK_SX1276_DIO_0_PIN != __LP_GPIO_NONE )
-    stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_0_BANK), ITSDK_SX1276_DIO_0_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+    stm32_interrupt_enable_forC(getPortFromBankId(ITSDK_SX1276_DIO_0_BANK), ITSDK_SX1276_DIO_0_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
   if ( ITSDK_SX1276_DIO_1_PIN != __LP_GPIO_NONE )
-	stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_1_BANK), ITSDK_SX1276_DIO_1_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+	stm32_interrupt_enable_forC(getPortFromBankId(ITSDK_SX1276_DIO_1_BANK), ITSDK_SX1276_DIO_1_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
   if ( ITSDK_SX1276_DIO_2_PIN != __LP_GPIO_NONE )
-	stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_2_BANK), ITSDK_SX1276_DIO_2_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+	stm32_interrupt_enable_forC(getPortFromBankId(ITSDK_SX1276_DIO_2_BANK), ITSDK_SX1276_DIO_2_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
   if ( ITSDK_SX1276_DIO_3_PIN != __LP_GPIO_NONE )
-	stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_3_BANK), ITSDK_SX1276_DIO_3_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+	stm32_interrupt_enable_forC(getPortFromBankId(ITSDK_SX1276_DIO_3_BANK), ITSDK_SX1276_DIO_3_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
   if ( ITSDK_SX1276_DIO_4_PIN != __LP_GPIO_NONE )
-    stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_4_BANK), ITSDK_SX1276_DIO_4_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+    stm32_interrupt_enable_forC(getPortFromBankId(ITSDK_SX1276_DIO_4_BANK), ITSDK_SX1276_DIO_4_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
   
   // This setup the GPIOs for Sx1276 and switch everything to lowpower
   __HAL_RCC_GPIOA_CLK_ENABLE();
