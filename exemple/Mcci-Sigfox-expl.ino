@@ -32,30 +32,45 @@ uint8_t getTxPower(int8_t * power) {
 }
 
 
+void printLog( char * msg ) {
+  Serial.print(msg);
+}
+
+
 sigfox_api_t sigfoxApi = {
   getCurrentRegion,
   getDeviceId,
   getInitialPac,
   getInitialKey,
-  getTxPower
+  getTxPower,
+  printLog
 };
+
+void inter(void) {
+  
+}
 
 void setup() {
   // put your setup code here, to run once:
   pinMode(LED_BUILTIN, OUTPUT);
-  Serial.begin(9600);
-
+  Serial.begin(115200);
+  Serial.println("GO !");
+  for (int i=0 ; i < 3 ; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(200);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(200);
+  }
   sigfox_setup(&sigfoxApi);
 }
 
 
-
 void loop() {
-  uint8_t mess[4] = { 0,1,2,3 }; 
+  uint8_t mess[12] = { 0,1,2,3,4,5,6,7,8,9,10,11 }; 
 
   itsdk_sigfox_sendFrame(
           mess,             // Buffer
-          4,                // Size
+          12,               // Size
           2,                // repeat
           SIGFOX_SPEED_DEFAULT,
           SIGFOX_POWER_DEFAULT,
@@ -63,5 +78,7 @@ void loop() {
           false,
           NULL
       );
+
+   delay(10*60*1000);
 
 } 
