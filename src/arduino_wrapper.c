@@ -256,12 +256,44 @@ void debug_print(debug_print_type_e lvl, char * msg) {
 }
 
 /** ***********************************************************************************
+ *  GPIO WRAPPER
+ *  The way the GPIO Interrupt are implemented is different and we have to manage
+ *  the integration with different layers:
+ *  - Arduino capture the interrupt and call a different callback function per gpio as the pin number is not transmitted
+ *  - This callback will call the generic ItSDK handler indicating the pin number
+ *  - The generic ItSDK handler call the desired function
+ * */
+
+static void gpio_interrupt_dio0(void) {
+	if (ITSDK_SX1276_DIO_0_PIN != __LP_GPIO_NONE)
+	  gpio_Callback(ITSDK_SX1276_DIO_0_PIN);
+}
+static void gpio_interrupt_dio1(void) {
+	if ( ITSDK_SX1276_DIO_1_PIN != __LP_GPIO_NONE ) 
+	gpio_Callback(ITSDK_SX1276_DIO_1_PIN);
+}
+static void gpio_interrupt_dio2(void) {
+	if ( ITSDK_SX1276_DIO_2_PIN != __LP_GPIO_NONE ) 
+	gpio_Callback(ITSDK_SX1276_DIO_2_PIN);
+}
+static void gpio_interrupt_dio3(void) {
+	if ( ITSDK_SX1276_DIO_3_PIN != __LP_GPIO_NONE ) 
+	gpio_Callback(ITSDK_SX1276_DIO_3_PIN);
+}
+static void gpio_interrupt_dio4(void) {
+	if ( ITSDK_SX1276_DIO_4_PIN != __LP_GPIO_NONE ) 
+	gpio_Callback(ITSDK_SX1276_DIO_4_PIN);
+}
+
+
+/** ***********************************************************************************
  *  HARDWARE INIT
  *  NEEDED IRQ HANDLER @TODO
  *  - DMA1_Channel2_3_IRQHandler(void)
  *  - GPIO - need to call void gpio_Callback(uint16_t GPIO_Pin) and clear irqs
  * */
 // Hardware layer
+TIM_HandleTypeDef htim2;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 
@@ -287,18 +319,71 @@ void MX_SPI1_Init(void)
 }
 
 /**
+ * Timer 2 configuration
+ * */
+void MX_TIM2_Init(void)
+{
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 0;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  //htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    while(1);
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    while(1);
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    while(1);
+  }
+}
+
+/**
  * Init the harwdare related to Sigfox stack
  * */
+GPIO_TypeDef * getPortFromBankId(uint8_t bankId);
 void init_hardware(void) {
 
+  // SPI1 Init
   __HAL_RCC_DMA1_CLK_ENABLE();
   HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
-
   MX_SPI1_Init();
+  MX_TIM2_Init();
 
-  // @TODO Paul
-  // - Init du hardware complet
+  // GPIO Irq handler registration
+  // The way GPIO Interrupts works between Arduino and ITSDK is a bit different and hard to match without chnaging the Arduino interrupt lib
+  // So my choice is to register all the needed interrupt to register inside Arduino the callback function within the ItSdk interrupt handler forever
+  // Then the ItSDK Gpio wrapper will manage the irq configuration
+  // Set analog to not trigger any interrupt before ful configuration
+  
+  if ( ITSDK_SX1276_DIO_0_PIN != __LP_GPIO_NONE )
+    stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_0_BANK), ITSDK_SX1276_DIO_0_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+  if ( ITSDK_SX1276_DIO_1_PIN != __LP_GPIO_NONE )
+	stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_1_BANK), ITSDK_SX1276_DIO_1_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+  if ( ITSDK_SX1276_DIO_2_PIN != __LP_GPIO_NONE )
+	stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_2_BANK), ITSDK_SX1276_DIO_2_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+  if ( ITSDK_SX1276_DIO_3_PIN != __LP_GPIO_NONE )
+	stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_3_BANK), ITSDK_SX1276_DIO_3_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+  if ( ITSDK_SX1276_DIO_4_PIN != __LP_GPIO_NONE )
+    stm32_interrupt_enable(getPortFromBankId(ITSDK_SX1276_DIO_4_BANK), ITSDK_SX1276_DIO_4_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
+  
+  // This setup the GPIOs for Sx1276 and switch everything to lowpower
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  SX1276InitLowPower();
 
 }
 
@@ -347,3 +432,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 	}
 }
 
+void DMA1_Channel2_3_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(&hdma_spi1_tx);
+}

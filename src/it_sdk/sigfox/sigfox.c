@@ -102,6 +102,7 @@ static uint16_t _itsdk_sigfox_getSpeed() {
 		default:
 			ITSDK_ERROR_REPORT(ITSDK_ERROR_SIGFOX_RCZ_NOTSUPPORTED,(uint16_t)itsdk_state.sigfox.rcz);
 	}
+	return itsdk_state.sigfox.current_speed;
 }
 
 
@@ -117,6 +118,9 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	log_info("OK\r\n");
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_setup\r\n"));
 
+	// Init hardware
+	init_hardware();
+	
 	// Init the state
 	itsdk_state.activeNetwork = __ACTIV_NETWORK_SIGFOX;
 	if ( itsdk_state.sigfox.initialized ) return SIGFOX_INIT_NOCHANGE;

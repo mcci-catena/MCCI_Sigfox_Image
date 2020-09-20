@@ -144,7 +144,7 @@ To simplify the IT_SDK integration I also add the compatibility file in [src/it_
 	```
 
 	The GPIO driver could be more easy to port but, it was more conveniant to reuse it directly as the Interrupt mechanism is really different than Ardunio one.
-  * Here we have some missing integration to make with the Arduino layer:
+  * Here is how the GPIO integartion has been made
 	- **GPIO**
     	- We need to have the Interrupt handler called by Arduino
 		```C 
@@ -164,7 +164,11 @@ To simplify the IT_SDK integration I also add the compatibility file in [src/it_
 			HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_??);		// DIO4
 		}
 		``` 
-        - We need to inject the correct GPIO setup by setting the right configuration when it can change from a board to another. Currently this is Hardcoded fro Catena-4618 in arduino_wrapper.h.
+		I've manage this by creating interrupt handler dedicated for each of the DIO Interrupts and register it with the Arduino Interrupt handler in arduino_wrapper.c. 
+		This indirection is required because the ItSDK irq handler needs a Pin Id as a handler can match multiple Pins. These dedicated IRQ handler calls the ItSDK generic handler.
+		The GPIO are initialized by the SX1276InitLowPower() function. Init init all the pins and setup sx1276 to be low power mode.
+
+        - TODO : We need to inject the correct GPIO setup by setting the right configuration when it can change from a board to another. Currently this is Hardcoded fro Catena-4618 in arduino_wrapper.h.
 		```C
 		#define ITSDK_SX1276_TCXO_VCC_BANK	 		__BANK_A					   // SX1276 GPIO FOR Activating TCXO
 		#define ITSDK_SX1276_TCXO_VCC_PIN	 		__LP_GPIO_8
