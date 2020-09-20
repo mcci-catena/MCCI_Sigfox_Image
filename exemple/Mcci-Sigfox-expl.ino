@@ -6,22 +6,22 @@ uint8_t getCurrentRegion(uint32_t * region) {
 }
 
 uint8_t getDeviceId(uint32_t * devId) {
-  *devId = 0x00D206BF;
+  *devId = 0x00000000;
   return 0;
 }
 
 uint8_t getInitialPac(uint8_t * pac) {
-  static uint8_t _pac[8] = { 0xEC, 0x3E, 0x61, 0xEB,
-                              0xDA, 0xF7, 0xE6, 0x3C };
+  static uint8_t _pac[8] = { 0x00, 0x00, 0x00, 0x00,
+                              0x00, 0x00, 0x00, 0x00 };
   bcopy(_pac,pac,8);
   return 0;
 }
 
 uint8_t getInitialKey(uint8_t * key) {
-  static uint8_t _key[16] = { 0x74, 0xE6, 0x77, 0xC6,
-                              0xE8, 0xEE, 0x7B, 0xC5,
-                              0x65, 0xC0, 0xA5, 0x4E,
-                              0x7E, 0xC8, 0xEA, 0xE9 };
+  static uint8_t _key[16] = { 0x00, 0x00, 0x00, 0x00,
+                              0x00, 0x00, 0x00, 0x00,
+                              0x00, 0x00, 0x00, 0x00,
+                              0x00, 0x00, 0x00, 0x00 };
   bcopy(_key,key,16);
   return 0;
 }
