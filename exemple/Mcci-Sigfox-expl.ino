@@ -11,17 +11,16 @@ uint8_t getDeviceId(uint32_t * devId) {
 }
 
 uint8_t getInitialPac(uint8_t * pac) {
-  static uint8_t _pac[8] = { 0x00, 0x00, 0x00, 0x00,
-                              0x00, 0x00, 0x00, 0x00 };
+  static uint8_t _pac[8] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
   bcopy(_pac,pac,8);
   return 0;
 }
 
-uint8_t getInitialKey(uint8_t * key) {
+uint8_t getDeviceKey(uint8_t * key) {
   static uint8_t _key[16] = { 0x00, 0x00, 0x00, 0x00,
                               0x00, 0x00, 0x00, 0x00,
                               0x00, 0x00, 0x00, 0x00,
-                              0x00, 0x00, 0x00, 0x00 };
+                              0x00, 0x00, 0x00, 0x00 }; 
   bcopy(_key,key,16);
   return 0;
 }
@@ -30,7 +29,6 @@ uint8_t getTxPower(int8_t * power) {
   *power = 14;
   return 0;
 }
-
 
 void printLog( char * msg ) {
   Serial.print(msg);
@@ -41,7 +39,7 @@ sigfox_api_t sigfoxApi = {
   getCurrentRegion,
   getDeviceId,
   getInitialPac,
-  getInitialKey,
+  getDeviceKey,
   getTxPower,
   printLog
 };
@@ -61,6 +59,7 @@ void setup() {
     digitalWrite(LED_BUILTIN, LOW);
     delay(200);
   }
+
   sigfox_setup(&sigfoxApi);
 }
 

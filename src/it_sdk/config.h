@@ -68,13 +68,13 @@
 #define ITSDK_LOGGER_CONF			0x000F									// All logs on debug (see logger.c) (File/Serial1/Serial2/Debug)
 #define ITSDK_LOGGER_WITH_SEG_RTT	__DISABLE								// disable SEGGER RTT trace driver for DEBUG interface
 #define ITSDK_LOGGER_MODULE			( \
-									  __LOG_MOD_NONE		\
-									| __LOG_MOD_LOWSIGFOX   \
-									| __LOG_MOD_STKSIGFOX   \
-									| __LOG_MOD_STKLORA     \
-									| __LOG_MOD_STIMER      \
-									| __LOG_MOD_LOWLORADBG  \
-									| __LOG_MOD_LOWLORAINF  \
+									  __LOG_MOD_NONE		  \
+								/*	| __LOG_MOD_LOWSIGFOX  */ \
+								/*	| __LOG_MOD_STKSIGFOX  */ \
+								/*	| __LOG_MOD_STKLORA    */ \
+								/*	| __LOG_MOD_STIMER     */ \
+								/*	| __LOG_MOD_LOWLORADBG */ \
+								/*	| __LOG_MOD_LOWLORAINF */ \
 									)										// list the module to be activated in log see config_defines.h
 
 

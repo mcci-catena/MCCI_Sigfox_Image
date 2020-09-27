@@ -167,6 +167,27 @@ To simplify the IT_SDK integration I also add the compatibility file in [src/it_
 		I've manage this by creating interrupt handler dedicated for each of the DIO Interrupts and register it with the Arduino Interrupt handler in arduino_wrapper.c. 
 		This indirection is required because the ItSDK irq handler needs a Pin Id as a handler can match multiple Pins. These dedicated IRQ handler calls the ItSDK generic handler.
 		The GPIO are initialized by the SX1276InitLowPower() function. Init init all the pins and setup sx1276 to be low power mode.
+		- To ba able to call the _stm32_interrupt_enable_ function from the C code in arduino_wrapper.c, I had to add a new C to C++ wrapper:
+		in **interrupt.h**:
+		```C
+		#ifdef __cplusplus
+			extern "C"
+		#endif
+		void stm32_interrupt_enable_forC(GPIO_TypeDef *port, uint16_t pin, void (*callback)(void), uint32_t mode);
+		```
+		in **interrupt.cpp**:
+		```C
+		#ifdef __cplusplus
+			extern "C"
+		#endif
+		void stm32_interrupt_enable_forC(GPIO_TypeDef *port, uint16_t pin, void (*callback)(void), uint32_t mode)
+		{
+  			std::function<void(void)> _c = callback;
+  			stm32_interrupt_enable(port,pin,_c,mode);
+		}
+		```
+		Adding the _extern "C"_ alone would have been working but I was not sure of the side effect on other existing code.
+
 
         - TODO : We need to inject the correct GPIO setup by setting the right configuration when it can change from a board to another. Currently this is Hardcoded fro Catena-4618 in arduino_wrapper.h.
 		```C
