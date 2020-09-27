@@ -119,6 +119,17 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 
 	// Init the state
 	itsdk_state.activeNetwork = __ACTIV_NETWORK_SIGFOX;
+	itsdk_config.sdk.activeNetwork = __ACTIV_NETWORK_SIGFOX;
+	itsdk_config.sdk.sigfox.sgfxKey = ITSDK_SIGFOX_KEY_TYPE;
+	itsdk_config.sdk.sigfox.rssiCal = ITSDK_SIGFOX_RSSICAL;
+
+	sfx_u32 config_words_2[3] = RC2_SM_CONFIG;
+	bcopy(config_words_2,itsdk_config.sdk.sigfox.macroch_config_words_rc2,3*sizeof(sfx_u32));
+	sfx_u32 config_words_3[3] = RC3C_CONFIG;
+	bcopy(config_words_3,itsdk_config.sdk.sigfox.macroch_config_words_rc3,3*sizeof(sfx_u32));
+	sfx_u32 config_words_4[3] = RC4_SM_CONFIG;
+	bcopy(config_words_4,itsdk_config.sdk.sigfox.macroch_config_words_rc4,3*sizeof(sfx_u32));
+
 	if ( itsdk_state.sigfox.initialized ) return SIGFOX_INIT_NOCHANGE;
 	if (    api == NULL
 	     || api->getCurrentRegion == NULL
@@ -129,8 +140,11 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	) {
 		return SIGFOX_INIT_FAILED;
 	}
-	uint8_t rcz = _itsdk_sigfox_getRc();
-	if (rcz == 0) return SIGFOX_INIT_FAILED;
+
+	// Get RCz
+	itsdk_state.sigfox.rcz = _itsdk_sigfox_getRc();
+	itsdk_config.sdk.sigfox.rcz = itsdk_state.sigfox.rcz;
+	if (itsdk_state.sigfox.rcz == 0) return SIGFOX_INIT_FAILED;
 
 	// Init hardware
 	init_hardware();
@@ -140,7 +154,12 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 
 	// Set the default power
 	itsdk_state.sigfox.current_power = _itsdk_sigfox_getTxPower();
+	itsdk_config.sdk.sigfox.txPower = itsdk_state.sigfox.current_power;
 	itsdk_sigfox_setTxPower_ext(itsdk_state.sigfox.current_power,true);
+
+	// Init the default speed 
+	_itsdk_sigfox_getSpeed();
+	itsdk_config.sdk.sigfox.speed = itsdk_state.sigfox.current_speed;
 
 	if ( ret == SIGFOX_INIT_SUCESS ) {
 		itsdk_state.sigfox.initialized = true;
@@ -651,7 +670,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getRczFromRegion(uint32_t region, uint8_t * rcz
  */
 itsdk_sigfox_init_t itsdk_sigfox_getKEY(uint8_t * key) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_getKEY\r\n"));
-	__api->getDeviceId(key);
+	__api->getDeviceKey(key);
 	return SIGFOX_INIT_SUCESS;
 }
 
