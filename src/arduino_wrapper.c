@@ -297,9 +297,9 @@ static void gpio_interrupt_dio4(void) {
  *  - GPIO - need to call void gpio_Callback(uint16_t GPIO_Pin) and clear irqs
  * */
 // Hardware layer
-TIM_HandleTypeDef htim2;
-SPI_HandleTypeDef hspi1;
-DMA_HandleTypeDef hdma_spi1_tx;
+TIM_HandleTypeDef htim2 = {0};
+SPI_HandleTypeDef hspi1 = {0};
+DMA_HandleTypeDef hdma_spi1_tx = {0};
 
 
 /**
@@ -307,6 +307,7 @@ DMA_HandleTypeDef hdma_spi1_tx;
  * */
 void MX_SPI1_Init(void)
 {
+  bzero(&hspi1,sizeof(SPI_HandleTypeDef));
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
@@ -319,7 +320,9 @@ void MX_SPI1_Init(void)
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi1.Init.CRCPolynomial = 7;
-  HAL_SPI_Init(&hspi1);
+  if ( HAL_SPI_Init(&hspi1) != HAL_OK ) {
+	  log_error("Problem during SPI initialization\r\n");
+  }
   HAL_NVIC_DisableIRQ(SPI1_IRQn);
 }
 
@@ -353,6 +356,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 
 		/* SPI1 DMA Init */
 		/* SPI1_TX Init */
+		bzero(&hdma_spi1_tx,sizeof(DMA_HandleTypeDef));
 		hdma_spi1_tx.Instance = DMA1_Channel3;
 		hdma_spi1_tx.Init.Request = DMA_REQUEST_1;
 		hdma_spi1_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
@@ -365,6 +369,13 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 		HAL_DMA_Init(&hdma_spi1_tx);
 		__HAL_LINKDMA(spiHandle,hdmatx,hdma_spi1_tx);
 	}
+}
+
+void MX_DMA_Init(void)
+{
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
 void DMA1_Channel2_3_IRQHandler(void)
@@ -380,12 +391,15 @@ void MX_TIM2_Init(void)
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
 
+  bzero(&htim2,sizeof(TIM_HandleTypeDef));	
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 0;
+  htim2.Init.Period = 65535;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  #ifndef ITSDK_WITHOUT_AUTORELOADPRELOAD
+   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  #endif
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     while(1);
@@ -403,6 +417,7 @@ void MX_TIM2_Init(void)
   }
 
   HAL_NVIC_DisableIRQ(TIM2_IRQn);	// because the arduino MspInit enable it
+  __HAL_RCC_TIM2_CLK_ENABLE();
 }
 
 /**
@@ -410,20 +425,6 @@ void MX_TIM2_Init(void)
  * */
 GPIO_TypeDef * getPortFromBankId(uint8_t bankId);
 void init_hardware(void) {
-
-  // TIMER2 Init
-  MX_TIM2_Init();
-  // SPI Init
-  MX_SPI1_Init();
-  // DMA Init
-  __HAL_RCC_DMA1_CLK_ENABLE();
-  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
-  __HAL_DMA_DISABLE_IT(hspi1.hdmatx, DMA_IT_HT);
-  __HAL_DMA_DISABLE_IT(hspi1.hdmatx, DMA_IT_TC);
-  __HAL_DMA_CLEAR_FLAG(hspi1.hdmatx, __HAL_DMA_GET_TC_FLAG_INDEX(hspi1.hdmatx) );
-  __HAL_DMA_CLEAR_FLAG(hspi1.hdmatx, __HAL_DMA_GET_HT_FLAG_INDEX(hspi1.hdmatx) );
-  
   // GPIO Irq handler registration
   // The way GPIO Interrupts works between Arduino and ITSDK is a bit different and hard to match without chnaging the Arduino interrupt lib
   // So my choice is to register all the needed interrupt to register inside Arduino the callback function within the ItSdk interrupt handler forever
@@ -444,6 +445,19 @@ void init_hardware(void) {
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   SX1276InitLowPower();				// configure all the sx1276 GPIO as low power
+
+
+  // DMA Init
+  MX_DMA_Init();
+  // SPI Init
+  MX_SPI1_Init();
+  // TIMER2 Init
+  MX_TIM2_Init();
+ 
+  __HAL_DMA_DISABLE_IT(hspi1.hdmatx, DMA_IT_HT);
+  __HAL_DMA_DISABLE_IT(hspi1.hdmatx, DMA_IT_TC);
+  __HAL_DMA_CLEAR_FLAG(hspi1.hdmatx, __HAL_DMA_GET_TC_FLAG_INDEX(hspi1.hdmatx) );
+  __HAL_DMA_CLEAR_FLAG(hspi1.hdmatx, __HAL_DMA_GET_HT_FLAG_INDEX(hspi1.hdmatx) );
 
 }
 

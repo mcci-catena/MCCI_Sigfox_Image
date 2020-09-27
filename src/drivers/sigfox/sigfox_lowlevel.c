@@ -219,7 +219,7 @@ void STLL_onSpiDmaTxComplete(void) {
 extern DMA_HandleTypeDef ITSDK_SX1276_SPIDMATX;
 #define __DMA_HANDLER ITSDK_SX1276_SPIDMATX
 
-extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef ITSDK_SX1276_SPI;
 #define __SPI_HANDLER ITSDK_SX1276_SPI
 
 void STLL_Transmit_DMA_Start( uint16_t *pDataSource, uint16_t Size)
@@ -294,7 +294,6 @@ void STLL_Transmit_DMA_Stop( void )
 {
     // Called by an interrupt from the sigfox library
 	LOG_DEBUG_SFXSX1276((">> STLL_Transmit_DMA_Stop\r\n"));
-
 	spi_transmit_dma_stop(&__SPI_HANDLER);
 	HAL_NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
 
@@ -354,6 +353,7 @@ void STLL_TIM2_Init( uint32_t period ) {
 
 	__HAL_RCC_TIM2_CLK_ENABLE();
 
+	bzero(&__TIM_HANDLER,sizeof(TIM_HandleTypeDef));
 	// -1- Timer Output Compare Configuration Structure declaration
 	switch (ITSDK_SX1276_TIM_ID) {
 	  case 2:
@@ -371,6 +371,7 @@ void STLL_TIM2_Init( uint32_t period ) {
 	__TIM_HANDLER.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 	#endif
 	HAL_TIM_Base_Init(&__TIM_HANDLER);
+	HAL_NVIC_DisableIRQ(TIM2_IRQn);	// because Arduno MspInit enable it
 	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
 	HAL_TIM_ConfigClockSource(&__TIM_HANDLER, &sClockSourceConfig);
 	HAL_TIM_PWM_Init(&__TIM_HANDLER);
