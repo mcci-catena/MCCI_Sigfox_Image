@@ -148,7 +148,9 @@ MCCI_Sigfox::MCCI_Sigfox(
  */
 MCCI_Sigfox::MCCI_Sigfox(sigfox_api_t * api) {
     sigfoxApiWrapperInUse = api;
-    __initOK = true;
+    if ( sigfox_setup(sigfoxApiWrapperInUse) == SIGFOX_INIT_SUCESS ) {
+       __initOK = true;
+    }
 }
 
 
@@ -177,7 +179,9 @@ void MCCI_Sigfox::initFromInternalVars() {
     sigfoxApiWrapper.printLog = _printLog;
 
     sigfoxApiWrapperInUse = &sigfoxApiWrapper;
-    __initOK = true;
+    if ( sigfox_setup(sigfoxApiWrapperInUse) == SIGFOX_INIT_SUCESS ) {
+       __initOK = true;
+    }
 }
 
 
