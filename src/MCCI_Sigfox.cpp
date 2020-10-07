@@ -215,5 +215,23 @@ uint8_t MCCI_Sigfox::convertToHexByte( char * s ) {
 
 /** ----------------------------------------------------------------------------------------------------
  *  CHANGE SETTING MADE AT INIT
+ *  Only when you did not used the full api constructor
  *  ----------------------------------------------------------------------------------------------------
  */
+
+mcci_sigfox_response_e MCCI_Sigfox::setLogger( HardwareSerial * serial ) {
+    if ( __initOK ) {
+        __logger = serial;
+        varWrapper_s.logger = __logger;
+        return MCCSIG_SUCCESS;
+    }
+    return MCCSIG_NOTINITIALIZED;
+}
+
+mcci_sigfox_response_e MCCI_Sigfox::setTxPower( int8_t power ) {
+    if ( __initOK ) {
+        __txPower = power;
+        return MCCSIG_SUCCESS;
+    }
+    return MCCSIG_NOTINITIALIZED;
+}

@@ -49,6 +49,10 @@ extern "C" {
 
 #define DEFAULT_TXPOWER  SIGFOX_DEFAULT_POWER
 
+typedef enum {
+    MCCSIG_SUCCESS = 0,
+    MCCSIG_NOTINITIALIZED,
+} mcci_sigfox_response_e;
 
 class MCCI_Sigfox {
 
