@@ -51,6 +51,8 @@ typedef struct {
 	uint8_t (*getTxPower)(int8_t * power);
     // Method to print a log
     void (*printLog)(char * msg);
+    // Eeprom baseAddress - reserve 16Bytes for sigfox from this address
+    uint32_t    eepromBase;
 } sigfox_api_t;
 
 // Overrided functions

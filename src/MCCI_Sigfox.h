@@ -61,20 +61,29 @@ class MCCI_Sigfox {
         sigfox_api_t * sigfoxApiWrapperInUse;
 
     public:
+        // String init
         MCCI_Sigfox(
-            char *   devId,
-            char *   pac,
-            char *   key, 
-            uint32_t region
+            char *      devId,          // Device id string, must be 8 hex Char long (32bits even with leading 0)
+            char *      pac,            // Device pac string, must be 16 hex chars
+            char *      key,            // Device key string, muct be 32 hex chars
+            uint32_t    region,         // Sigfox region REGION_RCx
+            uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
         );
-
+        // Binary init
         MCCI_Sigfox(
-            uint32_t   devId,
-            uint8_t  * pac,
-            uint8_t  * key, 
-            uint32_t    region
+            uint32_t   devId,           // Device Id
+            uint8_t  * pac,             // Device Pac in a uint8_t[8]
+            uint8_t  * key,             // Device Key in a uint8_t[16]
+            uint32_t   region,          // Sigfox region REGION_RCx
+            uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
         );
+        // Full Api init
         MCCI_Sigfox(sigfox_api_t * api);
+
+        // Update the configuration - only works with non full api initilization
+        mcci_sigfox_response_e setLogger( HardwareSerial * serial );
+        mcci_sigfox_response_e setTxPower( int8_t power );
+
 
     private:
         uint32_t  __devid;
@@ -83,7 +92,7 @@ class MCCI_Sigfox {
         uint32_t  __region;
         int8_t    __txPower;
         HardwareSerial * __logger;
-
+        uint32_t  __eepromBase;
 
         boolean   __initOK;
 
@@ -97,7 +106,6 @@ class MCCI_Sigfox {
         uint8_t   __getDeviceKey(uint8_t * key);
         uint8_t   __getTxPower(int8_t * power);
         void      __printLog( char * msg );
-
 };
 
 

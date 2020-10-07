@@ -48,7 +48,7 @@ struct {
  * Internal wrapper for the sigfox API
  */
 extern "C" uint8_t _getCurrentRegion(uint32_t * region) {
-   *region = *varWrapper_s.region;;
+   *region = *varWrapper_s.region;
    return 0;
 }
 
@@ -87,13 +87,14 @@ extern "C" void _printLog( char * msg ) {
 
 /** 
  * Constructor from Strings
- * MCCI_Sigfox( "01415DEE", "01020304050060708", "0102030405060708090A0B0D0E0F", MCCI_Sigfox.REGION_RC2);
+ * MCCI_Sigfox( "01415DEE", "01020304050060708", "0102030405060708090A0B0D0E0F", REGION_RC2, 0x8080000);
  */
 MCCI_Sigfox::MCCI_Sigfox(
-    char *   devId,
-    char *   pac,
-    char *   key, 
-    uint32_t  region
+    char *      devId,          // Device id string, must be 8 hex Char long (32bits even with leading 0)
+    char *      pac,            // Device pac string, must be 16 hex chars
+    char *      key,            // Device key string, muct be 32 hex chars
+    uint32_t    region,         // Sigfox region REGION_RCx
+    uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
 ) {
     __initOK = false;
 
@@ -103,12 +104,15 @@ MCCI_Sigfox::MCCI_Sigfox(
      || strlen(pac) != 16
      || strlen(key) != 32
    ) return;
+    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 16) ) {
+        return;
+    }
 
     // convert input
     __devid = 0;
-    for ( int i = 0 ; i < 8 ; i+=2 ) {
+    for ( int i = 0 ; i < 4 ; i++ ) {
         __devid <<= 8;
-        __devid = this->convertToHexByte(&devId[i]);
+        __devid += this->convertToHexByte(&devId[2*i]);
     }
     for ( int i = 0 ; i < 8 ; i++ ) {
         __pac[i] = this->convertToHexByte(&pac[2*i]);
@@ -118,6 +122,8 @@ MCCI_Sigfox::MCCI_Sigfox(
         __key[i] ^= PROTKEY;
     }
     __region = region;
+    __eepromBase = eepromBase;
+
     this->initFromInternalVars();
 }
 
@@ -128,18 +134,23 @@ MCCI_Sigfox::MCCI_Sigfox(
  * MCCI_Sigfox( 0x01415DEE, pac, key, MCCI_Sigfox.REGION_RC2);
  */
 MCCI_Sigfox::MCCI_Sigfox(
-    uint32_t   devId,
-    uint8_t  * pac,
-    uint8_t  * key, 
-    uint32_t    region
+    uint32_t   devId,           // Device Id
+    uint8_t  * pac,             // Device Pac in a uint8_t[8]
+    uint8_t  * key,             // Device Key in a uint8_t[16]
+    uint32_t   region,          // Sigfox region REGION_RCx
+    uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
 ) {
     __initOK = false;
+    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 16) ) {
+        return;
+    }
     __devid = devId;
     bcopy(pac,__pac,8);
     for ( int i = 0 ; i < 16 ; i++) {
         __key[i] = key[i] ^ PROTKEY;
     }
     __region = region;
+    __eepromBase = eepromBase;
     this->initFromInternalVars();
 }
 
@@ -170,13 +181,14 @@ void MCCI_Sigfox::initFromInternalVars() {
     varWrapper_s.region = &__region;
     varWrapper_s.txPower = &__txPower;
     varWrapper_s.logger = __logger;
-
+ 
     sigfoxApiWrapper.getCurrentRegion = _getCurrentRegion;
     sigfoxApiWrapper.getDeviceId = _getDeviceId;
     sigfoxApiWrapper.getInitialPac = _getInitialPac;
     sigfoxApiWrapper.getDeviceKey = _getDeviceKey;
     sigfoxApiWrapper.getTxPower = _getTxPower;
     sigfoxApiWrapper.printLog = _printLog;
+    sigfoxApiWrapper.eepromBase = __eepromBase;
 
     sigfoxApiWrapperInUse = &sigfoxApiWrapper;
     if ( sigfox_setup(sigfoxApiWrapperInUse) == SIGFOX_INIT_SUCESS ) {

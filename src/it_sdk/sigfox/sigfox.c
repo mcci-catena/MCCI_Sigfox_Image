@@ -147,7 +147,7 @@ itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api) {
 	if (itsdk_state.sigfox.rcz == 0) return SIGFOX_INIT_FAILED;
 
 	// Init hardware
-	init_hardware();
+	init_hardware(__api->eepromBase);
 
 	itsdk_sigfox_init_t ret = SIGFOX_INIT_SUCESS;
 	ret = sx1276_sigfox_init();

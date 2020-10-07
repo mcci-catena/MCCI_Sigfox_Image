@@ -120,7 +120,18 @@ int16_t adc_getTemperature() {
  * Sequence Id
  * As STM32 only supports 32b alignement for eeprom R/W, the real space occupied is 4+8 = 12 BYTES
  * The following functions are needed to support this requirement
+ * We request to reserve 16Bytes: the 4 first byte at base are a Magic number to ensure the zone has been 
+ * initialized.
  */
+
+static uint32_t __eepromBase;
+#define __eepromMagic 0xDD1155CC
+#define EEPROM_START_ADDR 0
+#define EEPROM_SIZE (6*1024)
+#define FLASH_PEKEY1               ((uint32_t)0x89ABCDEFU) /*!< Flash program erase key1 */
+#define FLASH_PEKEY2               ((uint32_t)0x02030405U) /*!< Flash program erase key: used with FLASH_PEKEY2
+                                                               to unlock the write access to the FLASH_PECR register and
+                                                               data EEPROM */
 
 /**
  * Return the offset of the NVM area for Sigfox Secure Element
@@ -136,7 +147,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getSeNvmOffset(uint32_t * offset) {
  * Return the offset of the NVM area for Sigfox
  */
 itsdk_sigfox_init_t itsdk_sigfox_getNvmOffset(uint32_t * offset) {
-	*offset = 0;
+	*offset = __eepromBase+4;
 	return SIGFOX_INIT_SUCESS;
 }
 
@@ -153,24 +164,37 @@ uint32_t itdt_align_32b(uint32_t v) {
 	return v;
 }
 
-
-// Mocked version
-static uint8_t __fakeNvm[12];
-
 /**
  * Read the NVM, Bank will be 0, offset will start at 0 and offset+len will be in the
  * 0..12 NVM buffer expected by the sigfox library.
  * The result is a byte stream in data array passed by the caller. It reads len Byte
  * @TODO
  * */
+uint32_t __eepromRead(uint32_t addr) {
+	return (*(volatile uint32_t*)addr);
+}
+
 bool _eeprom_read(uint8_t bank, uint32_t offset, void * data, int len) {
-	
+
 	uint8_t  * _data = (uint8_t *)data;
-	// mock = use ram to store it
-	for ( int i = 0 ; i < len ; i++ ) {
-		_data[i] = __fakeNvm[offset+i];
+	uint32_t   _eepromAddr;
+	uint32_t   v;
+
+	_eepromAddr = (uint32_t)(EEPROM_START_ADDR+offset);
+	if ( (_eepromAddr & 0x3) != 0 ) {
+	    return false;
 	}
 
+	// Read data
+	for (int i = 0; i < len; i += 4) {
+		v = __eepromRead(_eepromAddr);
+		_data[i]=(v & 0xFF000000) >> 24;
+		if ( i+1 < len) _data[i+1]=(v & 0x00FF0000) >> 16;
+		if ( i+2 < len) _data[i+2]=(v & 0x0000FF00) >> 8;
+		if ( i+3 < len) _data[i+3]=(v & 0x000000FF);
+		_eepromAddr+=4;
+	}
+	return true;
 }
 
 /**
@@ -179,14 +203,49 @@ bool _eeprom_read(uint8_t bank, uint32_t offset, void * data, int len) {
  * As a result the Byte stream in data array will be written innNVM
  * @TODO
  * */
-bool _eeprom_write(uint8_t bank, uint32_t offset, void * data, int len) {
+bool __eepromWrite(uint32_t addr, uint32_t v) {
 
-	uint8_t  * _data = (uint8_t *)data;
-	// mock = use ram to store it
-	for ( int i = 0 ; i < len ; i++ ) {
-		__fakeNvm[offset+i] = _data[i];
+	uint16_t tmout = 10000;
+	while ( (FLASH->SR & FLASH_SR_BSY) && tmout) tmout--;
+	if ( tmout == 0 ) return false;
+
+	// Clear the FTDW bit (data will be erased before write if it non zero)
+	FLASH->PECR &= (uint32_t)(~(uint32_t)FLASH_PECR_FIX);
+
+	*(volatile uint32_t *)addr = v;
+
+	while ( (FLASH->SR & FLASH_SR_BSY) && tmout) tmout--;
+	if ( tmout == 0 ) return false;
+
+	return true;
+}
+bool _eeprom_write(uint8_t bank, uint32_t offset, void * data, int len) {
+	uint8_t *  _data = (uint8_t *)data;
+	uint32_t   _eepromAddr;
+	uint32_t   v;
+
+	_eepromAddr = (uint32_t)(EEPROM_START_ADDR+offset);
+	if ( (_eepromAddr & 0x3) != 0 ) {
+	    return false;
 	}
 
+	// Unlock EEPROM
+	if (FLASH->PECR & FLASH_PECR_PELOCK) {
+			FLASH->PEKEYR = FLASH_PEKEY1;
+			FLASH->PEKEYR = FLASH_PEKEY2;
+	}
+	// Copy data
+	for (int i = 0; i < len; i += 4) {
+		v = _data[i] << 24;
+		v+= (i+1 < len)?_data[i+1]<<16:0;
+		v+= (i+2 < len)?_data[i+2]<<8:0;
+		v+= (i+3 < len)?_data[i+3]:0;
+		if (v != __eepromRead(_eepromAddr)) __eepromWrite(_eepromAddr,v);
+		_eepromAddr+=4;
+	}
+	// Lock EEPROM
+	FLASH->PECR |= FLASH_PECR_PELOCK;
+	return true;
 }
 
 /** ***********************************************************************************
@@ -424,13 +483,30 @@ void MX_TIM2_Init(void)
  * Init the harwdare related to Sigfox stack
  * */
 GPIO_TypeDef * getPortFromBankId(uint8_t bankId);
-void init_hardware(void) {
+void init_hardware(uint32_t eepromBase) {
+
+  // init eeprom memory zone
+  __eepromBase = eepromBase;
+  uint32_t v = __eepromRead(__eepromBase);
+  if ( v != __eepromMagic ) {
+  	  if (FLASH->PECR & FLASH_PECR_PELOCK) {
+			FLASH->PEKEYR = FLASH_PEKEY1;
+			FLASH->PEKEYR = FLASH_PEKEY2;
+	  }
+	  __eepromWrite(__eepromBase,__eepromMagic);
+	  FLASH->PECR |= FLASH_PECR_PELOCK;
+	  uint8_t zero[12];
+	  bzero(zero,12);
+	  uint32_t offset;
+	  itsdk_sigfox_getSeNvmOffset(&offset);
+	  _eeprom_write(0,offset,zero,12);
+  }
+
   // GPIO Irq handler registration
   // The way GPIO Interrupts works between Arduino and ITSDK is a bit different and hard to match without chnaging the Arduino interrupt lib
   // So my choice is to register all the needed interrupt to register inside Arduino the callback function within the ItSdk interrupt handler forever
   // Then the ItSDK Gpio wrapper will manage the irq configuration
   // Set analog to not trigger any interrupt before ful configuration
-  
   if ( ITSDK_SX1276_DIO_0_PIN != __LP_GPIO_NONE )
     stm32_interrupt_enable_forC(getPortFromBankId(ITSDK_SX1276_DIO_0_BANK), ITSDK_SX1276_DIO_0_PIN, gpio_interrupt_dio0, GPIO_MODE_ANALOG);
   if ( ITSDK_SX1276_DIO_1_PIN != __LP_GPIO_NONE )
