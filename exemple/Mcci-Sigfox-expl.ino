@@ -1,10 +1,4 @@
-//#include "MCCI_Sigfox_Image.h"
-
 #include "MCCI_Sigfox.h"
-
-// @TODO
-// - Comprendre pourquoi l'init courte ne marche pas
-// - Comprendre pourquoi ca a l'air de partir en sucette avec power > 14
 
 /* ***************************************************************************
  * This is one of the first ways toi setup the library
