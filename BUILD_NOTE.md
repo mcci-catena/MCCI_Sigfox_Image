@@ -255,6 +255,7 @@ void debug_print(debug_print_type_e lvl, char * msg); // implemented - call the 
    * currentRegion - current radio configuration (zone)
    * txPower - transmission power
    * printLog - print a	Log line function, NULL if no log expected
+   * eepromBase - eeprom offset for the sigfox lib
 
 	Currently a structure with the following API is pass to the driver to inject these parameters
 	```C
@@ -272,5 +273,7 @@ void debug_print(debug_print_type_e lvl, char * msg); // implemented - call the 
 		uint8_t (*getTxPower)(int8_t * power);
 		// Method to print a log
     	void (*printLog)(char * msg);
+		// Eeprom offset for sigfox lib
+		uint32_t eepromBase;
 	} sigfox_api_t;
 	```

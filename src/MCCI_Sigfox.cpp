@@ -35,12 +35,13 @@
  */
 
 struct {
-    uint32_t  * devid;
-    uint8_t   * pac;
-    uint8_t   * key;
-    uint32_t  * region;
-    int8_t    * txPower;
+    uint32_t  devid;
+    uint8_t   pac[8];
+    uint8_t   key[16];
+    uint32_t  region;
+    int8_t    txPower;
     HardwareSerial * logger;
+    uint32_t  eepromBase;
 }  varWrapper_s;
 
 
@@ -48,13 +49,13 @@ struct {
  * Internal wrapper for the sigfox API
  */
 extern "C" uint8_t _getCurrentRegion(uint32_t * region) {
-   *region = *varWrapper_s.region;
+   *region = varWrapper_s.region;
    return 0;
 }
 
 
 extern "C" uint8_t _getDeviceId(uint32_t * devId) {
-   *devId = *varWrapper_s.devid;
+   *devId = varWrapper_s.devid;
    return 0;
 }
 
@@ -70,7 +71,7 @@ extern "C" uint8_t _getDeviceKey(uint8_t * key) {
 }
 
 extern "C" uint8_t _getTxPower(int8_t * power) {
-  *power = *varWrapper_s.txPower;
+  *power = varWrapper_s.txPower;
   return 0;
 }
 
@@ -94,7 +95,7 @@ MCCI_Sigfox::MCCI_Sigfox(
     char *      pac,            // Device pac string, must be 16 hex chars
     char *      key,            // Device key string, muct be 32 hex chars
     uint32_t    region,         // Sigfox region REGION_RCx
-    uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
+    uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
 ) {
     __initOK = false;
 
@@ -104,25 +105,25 @@ MCCI_Sigfox::MCCI_Sigfox(
      || strlen(pac) != 16
      || strlen(key) != 32
    ) return;
-    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 16) ) {
+    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 24) ) {
         return;
     }
 
     // convert input
-    __devid = 0;
+    varWrapper_s.devid = 0;
     for ( int i = 0 ; i < 4 ; i++ ) {
-        __devid <<= 8;
-        __devid += this->convertToHexByte(&devId[2*i]);
+        varWrapper_s.devid <<= 8;
+        varWrapper_s.devid += this->convertToHexByte(&devId[2*i]);
     }
     for ( int i = 0 ; i < 8 ; i++ ) {
-        __pac[i] = this->convertToHexByte(&pac[2*i]);
+        varWrapper_s.pac[i] = this->convertToHexByte(&pac[2*i]);
     }
     for ( int i = 0 ; i < 16 ; i++ ) {
-        __key[i] = this->convertToHexByte(&key[2*i]);
-        __key[i] ^= PROTKEY;
+        varWrapper_s.key[i] = this->convertToHexByte(&key[2*i]);
+        varWrapper_s.key[i] ^= PROTKEY;
     }
-    __region = region;
-    __eepromBase = eepromBase;
+    varWrapper_s.region = region;
+    varWrapper_s.eepromBase = eepromBase;
 
     this->initFromInternalVars();
 }
@@ -131,26 +132,26 @@ MCCI_Sigfox::MCCI_Sigfox(
  * Constructor from binary
  * uint8_t pac = {...}
  * uint8_t key = {...}
- * MCCI_Sigfox( 0x01415DEE, pac, key, MCCI_Sigfox.REGION_RC2);
+ * MCCI_Sigfox( 0x01415DEE, pac, key, REGION_RC2, 0x8080000);
  */
 MCCI_Sigfox::MCCI_Sigfox(
     uint32_t   devId,           // Device Id
     uint8_t  * pac,             // Device Pac in a uint8_t[8]
     uint8_t  * key,             // Device Key in a uint8_t[16]
     uint32_t   region,          // Sigfox region REGION_RCx
-    uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
+    uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
 ) {
     __initOK = false;
-    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 16) ) {
+    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 24) ) {
         return;
     }
-    __devid = devId;
-    bcopy(pac,__pac,8);
+    varWrapper_s.devid = devId;
+    bcopy(pac,varWrapper_s.pac,8);
     for ( int i = 0 ; i < 16 ; i++) {
-        __key[i] = key[i] ^ PROTKEY;
+        varWrapper_s.key[i] = key[i] ^ PROTKEY;
     }
-    __region = region;
-    __eepromBase = eepromBase;
+    varWrapper_s.region = region;
+    varWrapper_s.eepromBase = eepromBase;
     this->initFromInternalVars();
 }
 
@@ -171,24 +172,17 @@ MCCI_Sigfox::MCCI_Sigfox(sigfox_api_t * api) {
  */
 void MCCI_Sigfox::initFromInternalVars() {
     // check the region
-    if ( !isValidRegion(__region) ) return;
-    __txPower = DEFAULT_TXPOWER;
-    __logger = NULL;
-
-    varWrapper_s.devid = &__devid;
-    varWrapper_s.pac = __pac;
-    varWrapper_s.key = __key;
-    varWrapper_s.region = &__region;
-    varWrapper_s.txPower = &__txPower;
-    varWrapper_s.logger = __logger;
- 
+    if ( !isValidRegion(varWrapper_s.region) ) return;
+    varWrapper_s.txPower = DEFAULT_TXPOWER;
+    varWrapper_s.logger = NULL;
+  
     sigfoxApiWrapper.getCurrentRegion = _getCurrentRegion;
     sigfoxApiWrapper.getDeviceId = _getDeviceId;
     sigfoxApiWrapper.getInitialPac = _getInitialPac;
     sigfoxApiWrapper.getDeviceKey = _getDeviceKey;
     sigfoxApiWrapper.getTxPower = _getTxPower;
     sigfoxApiWrapper.printLog = _printLog;
-    sigfoxApiWrapper.eepromBase = __eepromBase;
+    sigfoxApiWrapper.eepromBase = varWrapper_s.eepromBase;
 
     sigfoxApiWrapperInUse = &sigfoxApiWrapper;
     if ( sigfox_setup(sigfoxApiWrapperInUse) == SIGFOX_INIT_SUCESS ) {
@@ -218,8 +212,8 @@ uint8_t MCCI_Sigfox::convertToHexByte( char * s ) {
     for ( int i = 0 ; i < 2 ; i++ ) {
         v <<= 4;
         if ( s[i] >= '0' && s[i] <= '9' ) v+= s[i] - '0';
-        else if ( s[i] >= 'A' && s[i] <= 'F' ) v+= s[i] - 'A';
-        else if ( s[i] >= 'a' && s[i] <= 'f' ) v+= s[i] - 'a';
+        else if ( s[i] >= 'A' && s[i] <= 'F' ) v+= s[i] - 'A' + 10;
+        else if ( s[i] >= 'a' && s[i] <= 'f' ) v+= s[i] - 'a' + 10;
     }
     return v;
 }
@@ -233,8 +227,7 @@ uint8_t MCCI_Sigfox::convertToHexByte( char * s ) {
 
 mcci_sigfox_response_e MCCI_Sigfox::setLogger( HardwareSerial * serial ) {
     if ( __initOK ) {
-        __logger = serial;
-        varWrapper_s.logger = __logger;
+        varWrapper_s.logger = serial;
         return MCCSIG_SUCCESS;
     }
     return MCCSIG_NOTINITIALIZED;
@@ -242,8 +235,107 @@ mcci_sigfox_response_e MCCI_Sigfox::setLogger( HardwareSerial * serial ) {
 
 mcci_sigfox_response_e MCCI_Sigfox::setTxPower( int8_t power ) {
     if ( __initOK ) {
-        __txPower = power;
+        varWrapper_s.txPower = power;
         return MCCSIG_SUCCESS;
     }
     return MCCSIG_NOTINITIALIZED;
 }
+
+boolean MCCI_Sigfox::isReady() {
+    return __initOK;
+}
+
+/** ----------------------------------------------------------------------------------------------------
+ *  CONFIGURATION
+ *  API to access the current configuration
+ *  ----------------------------------------------------------------------------------------------------
+ */
+uint8_t MCCI_Sigfox::getCurrentRC() {
+    uint8_t rc = 0;
+    itsdk_sigfox_getCurrentRcz(&rc);
+    return rc;
+}
+
+uint32_t MCCI_Sigfox::getDeviceId() {
+    itsdk_sigfox_device_is_t devId;
+    itsdk_sigfox_getDeviceId(&devId);
+    return (uint32_t)devId;
+} 
+
+void MCCI_Sigfox::getInitialPac(uint8_t * pac) {
+    itsdk_sigfox_getInitialPac(pac);
+}
+
+int16_t MCCI_Sigfox::getLastRssi() {
+    int16_t rssi;
+    itsdk_sigfox_getLastRssi(&rssi);
+    return rssi;
+}
+
+uint16_t MCCI_Sigfox::getLastSeqId() {
+    uint16_t seq;
+    itsdk_sigfox_getLastSeqId(&seq);
+    return seq;
+}
+
+void MCCI_Sigfox::switchToPublicKey() {
+    itsdk_sigfox_switchPublicKey();
+}
+
+void MCCI_Sigfox::switchToPrivateKey() {
+    itsdk_sigfox_switchPrivateKey();
+}
+
+void MCCI_Sigfox::printSigfoxVersion() {
+    if ( sigfoxApiWrapperInUse->printLog != NULL ) {
+        uint8_t * libStr;
+        itsdk_sigfox_getSigfoxLibVersion(&libStr);
+        sigfoxApiWrapperInUse->printLog((char *)libStr);
+        sigfoxApiWrapperInUse->printLog("\r\n");
+    }
+}
+
+/** ----------------------------------------------------------------------------------------------------
+ *  COMMUNICATIONS
+ *  API to execute communications with Sigfox
+ *  ----------------------------------------------------------------------------------------------------
+ */
+
+mcci_sigfox_response_e MCCI_Sigfox::sendBit(boolean bitValue) {
+    return sendBitWithAck(bitValue,NULL);
+}
+
+mcci_sigfox_response_e MCCI_Sigfox::sendBitWithAck(boolean bitValue,uint8_t * downlinkBuffer) {
+    itdsk_sigfox_txrx_t ret;
+    ret = itsdk_sigfox_sendBit(bitValue,2,SIGFOX_SPEED_DEFAULT,SIGFOX_POWER_DEFAULT,(downlinkBuffer!=NULL),downlinkBuffer);
+    switch (ret) {
+        case SIGFOX_TRANSMIT_SUCESS:
+        case SIGFOX_TXRX_NO_DOWNLINK:
+            return MCCSIG_SUCCESS;
+        case SIGFOX_TXRX_DOWLINK_RECEIVED:
+            return MCCSIG_DOWNLINK_RECEIVED;
+        case SIGFOX_TXRX_ERROR:
+        default:
+            return MCCSIG_TRANSMIT_ERROR;    
+    }
+}
+
+mcci_sigfox_response_e MCCI_Sigfox::sendFrame(uint8_t * buffer, uint8_t size) {
+    return sendFrameWithAck(buffer,size,NULL);
+}
+
+mcci_sigfox_response_e MCCI_Sigfox::sendFrameWithAck(uint8_t * buffer, uint8_t size, uint8_t * downlinkBuffer) {
+    itdsk_sigfox_txrx_t ret;
+    ret = itsdk_sigfox_sendFrame(buffer,size,2,SIGFOX_SPEED_DEFAULT,SIGFOX_POWER_DEFAULT,PAYLOAD_ENCRYPT_NONE,(downlinkBuffer!=NULL),downlinkBuffer);
+    switch (ret) {
+        case SIGFOX_TRANSMIT_SUCESS:
+        case SIGFOX_TXRX_NO_DOWNLINK:
+            return MCCSIG_SUCCESS;
+        case SIGFOX_TXRX_DOWLINK_RECEIVED:
+            return MCCSIG_DOWNLINK_RECEIVED;
+        case SIGFOX_TXRX_ERROR:
+        default:
+            return MCCSIG_TRANSMIT_ERROR;    
+    }
+}
+

@@ -52,6 +52,8 @@ extern "C" {
 typedef enum {
     MCCSIG_SUCCESS = 0,
     MCCSIG_NOTINITIALIZED,
+    MCCSIG_DOWNLINK_RECEIVED,
+    MCCSIG_TRANSMIT_ERROR
 } mcci_sigfox_response_e;
 
 class MCCI_Sigfox {
@@ -67,7 +69,7 @@ class MCCI_Sigfox {
             char *      pac,            // Device pac string, must be 16 hex chars
             char *      key,            // Device key string, muct be 32 hex chars
             uint32_t    region,         // Sigfox region REGION_RCx
-            uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
+            uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
         );
         // Binary init
         MCCI_Sigfox(
@@ -75,7 +77,7 @@ class MCCI_Sigfox {
             uint8_t  * pac,             // Device Pac in a uint8_t[8]
             uint8_t  * key,             // Device Key in a uint8_t[16]
             uint32_t   region,          // Sigfox region REGION_RCx
-            uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 16Bytes from this one
+            uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
         );
         // Full Api init
         MCCI_Sigfox(sigfox_api_t * api);
@@ -83,17 +85,25 @@ class MCCI_Sigfox {
         // Update the configuration - only works with non full api initilization
         mcci_sigfox_response_e setLogger( HardwareSerial * serial );
         mcci_sigfox_response_e setTxPower( int8_t power );
+        boolean isReady();
 
+        // Read the configuration
+        uint8_t     getCurrentRC();
+        uint32_t    getDeviceId();
+        void        getInitialPac(uint8_t * pac);
+        int16_t     getLastRssi();
+        uint16_t    getLastSeqId();
+        void        switchToPublicKey();
+        void        switchToPrivateKey();
+        void        printSigfoxVersion();
+
+        // Transmission
+        mcci_sigfox_response_e sendBit(boolean bitValue);
+        mcci_sigfox_response_e sendBitWithAck(boolean bitValue,uint8_t * downlinkBuffer);
+        mcci_sigfox_response_e sendFrame(uint8_t * buffer, uint8_t size);
+        mcci_sigfox_response_e sendFrameWithAck(uint8_t * buffer, uint8_t size, uint8_t * downlinkBuffer);
 
     private:
-        uint32_t  __devid;
-        uint8_t   __pac[8];
-        uint8_t   __key[16];
-        uint32_t  __region;
-        int8_t    __txPower;
-        HardwareSerial * __logger;
-        uint32_t  __eepromBase;
-
         boolean   __initOK;
 
         uint8_t   convertToHexByte(char * s);

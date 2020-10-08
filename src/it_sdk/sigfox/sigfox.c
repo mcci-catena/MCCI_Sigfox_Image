@@ -415,7 +415,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getDeviceId(itsdk_sigfox_device_is_t * devId) {
  */
 itsdk_sigfox_init_t itsdk_sigfox_getInitialPac(uint8_t * pac) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_getInitialPac\r\n"));
-	__api->getDeviceId(pac);
+	__api->getInitialPac(pac);
 	return SIGFOX_INIT_SUCESS;
 }
 

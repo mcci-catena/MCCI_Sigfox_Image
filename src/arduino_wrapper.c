@@ -499,7 +499,7 @@ void init_hardware(uint32_t eepromBase) {
 	  bzero(zero,12);
 	  uint32_t offset;
 	  itsdk_sigfox_getSeNvmOffset(&offset);
-	  _eeprom_write(0,offset,zero,12);
+	  _eeprom_write(0,offset,zero,20);
   }
 
   // GPIO Irq handler registration
