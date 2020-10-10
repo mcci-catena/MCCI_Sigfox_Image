@@ -1,3 +1,4 @@
+
 #include "MCCI_Sigfox.h"
 
 /* ***************************************************************************
@@ -78,7 +79,6 @@ static uint8_t __key[16] = { 0x96,0xE0,0xAA,0xC5,0x65,0x13,0x9E,0x0C,0x9A,0x82,0
 MCCI_Sigfox Sigfox( 0x014158D8, __pac, __key, REGION_RC2, 0x8080010);  
 */
 
-
 void setup() {
   // put your setup code here, to run once:
   pinMode(LED_BUILTIN, OUTPUT);
@@ -111,12 +111,15 @@ void setup() {
     }
     Serial.println();
     Serial.print(" Last Reception Rssi: ");Serial.print(Sigfox.getLastRssi());Serial.println("dBm");
+    Serial.print(" Current Tx Power: ");Serial.print(Sigfox.getTxPower());Serial.println("dBm");
     Serial.print(" Last Sequence number used: ");Serial.println(Sigfox.getLastSeqId());
     Serial.print(" Sigfox version: ");Sigfox.printSigfoxVersion();
+    
   } else {
     Serial.println("Failed to init Sigfox Library");
     while(true);
   }
+
 }
 
 
