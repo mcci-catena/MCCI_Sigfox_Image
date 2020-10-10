@@ -295,6 +295,12 @@ void MCCI_Sigfox::printSigfoxVersion() {
     }
 }
 
+int8_t MCCI_Sigfox::getTxPower() {
+    int8_t power;
+    itsdk_sigfox_getTxPower(&power);
+    return power;
+}
+
 /** ----------------------------------------------------------------------------------------------------
  *  COMMUNICATIONS
  *  API to execute communications with Sigfox
@@ -307,7 +313,8 @@ mcci_sigfox_response_e MCCI_Sigfox::sendBit(boolean bitValue) {
 
 mcci_sigfox_response_e MCCI_Sigfox::sendBitWithAck(boolean bitValue,uint8_t * downlinkBuffer) {
     itdsk_sigfox_txrx_t ret;
-    ret = itsdk_sigfox_sendBit(bitValue,2,SIGFOX_SPEED_DEFAULT,SIGFOX_POWER_DEFAULT,(downlinkBuffer!=NULL),downlinkBuffer);
+    bool ack = (downlinkBuffer!=NULL)?true:false;
+    ret = itsdk_sigfox_sendBit(bitValue,2,SIGFOX_SPEED_DEFAULT,SIGFOX_POWER_DEFAULT,ack,downlinkBuffer);
     switch (ret) {
         case SIGFOX_TRANSMIT_SUCESS:
         case SIGFOX_TXRX_NO_DOWNLINK:
@@ -326,7 +333,8 @@ mcci_sigfox_response_e MCCI_Sigfox::sendFrame(uint8_t * buffer, uint8_t size) {
 
 mcci_sigfox_response_e MCCI_Sigfox::sendFrameWithAck(uint8_t * buffer, uint8_t size, uint8_t * downlinkBuffer) {
     itdsk_sigfox_txrx_t ret;
-    ret = itsdk_sigfox_sendFrame(buffer,size,2,SIGFOX_SPEED_DEFAULT,SIGFOX_POWER_DEFAULT,PAYLOAD_ENCRYPT_NONE,(downlinkBuffer!=NULL),downlinkBuffer);
+    bool ack = (downlinkBuffer!=NULL)?true:false;
+    ret = itsdk_sigfox_sendFrame(buffer,size,2,SIGFOX_SPEED_DEFAULT,SIGFOX_POWER_DEFAULT,PAYLOAD_ENCRYPT_NONE,ack,downlinkBuffer);
     switch (ret) {
         case SIGFOX_TRANSMIT_SUCESS:
         case SIGFOX_TXRX_NO_DOWNLINK:

@@ -60,17 +60,22 @@ void itsdk_delayMs(uint32_t ms) {
  *  @TODO
  * */
 uint32_t lowPower_delayMs(uint32_t duration) {
+	uint32_t maxDur = itsdk_stimer_nextTimeoutMs();
+	if ( maxDur < duration ) {
+		duration = maxDur;
+	}
 	delay(duration);
+	return 0;
 }
 
 // get the time in ms since start with 32b millis overflow management
 uint64_t __last_millis = 0;
 uint64_t __loops_millis = 0;
 uint64_t itsdk_time_get_ms() {
-	uint32_t m = millis();
+	uint64_t m = millis();
 	if ( m < __last_millis ) __loops_millis++;
 	__last_millis = m;
-	return __loops_millis << 32 + m;
+	return (__loops_millis << 32) + m;
 }
 
 

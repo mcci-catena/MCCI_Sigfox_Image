@@ -53,6 +53,7 @@ static uint8_t _itsdk_sigfox_getRc()  {
 	__api->getCurrentRegion(&region);
 	uint8_t rcz;
 	if ( itsdk_sigfox_getRczFromRegion(region,&rcz) != SIGFOX_INIT_SUCESS ) {
+		log_error("Failed to find a valid RC\r\n");
 		return 0;
 	}
 	return rcz;
@@ -275,12 +276,12 @@ itdsk_sigfox_txrx_t itsdk_sigfox_sendBit(
 	if ( power == SIGFOX_POWER_DEFAULT ) power = itsdk_state.sigfox.current_power;
 	if ( speed == SIGFOX_SPEED_DEFAULT ) speed = _itsdk_sigfox_getSpeed();
 	if ( ack && dwn == NULL) return SIGFOX_ERROR_PARAMS;
-
 	itsdk_sigfox_setTxPower(power);
 	itsdk_sigfox_setTxSpeed(speed);
 
 	itdsk_sigfox_txrx_t result = SIGFOX_TXRX_ERROR;
-	uint16_t ret = SIGFOX_API_send_bit( bitValue,dwn,repeat,ack);
+	sfx_bool value = (bitValue)?SFX_TRUE:SFX_FALSE;
+	uint16_t ret = SIGFOX_API_send_bit( value,dwn,repeat,ack);
 	switch (ret&0xFF) {
 		case SFX_ERR_INT_GET_RECEIVED_FRAMES_TIMEOUT:
 			result = SIGFOX_TXRX_NO_DOWNLINK;
@@ -343,7 +344,7 @@ itdsk_sigfox_txrx_t itsdk_sigfox_sendOob(
  */
 itsdk_sigfox_init_t itsdk_sigfox_getCurrentRcz(uint8_t * rcz) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_getCurrentRcz\r\n"));
-	*rcz = _itsdk_sigfox_getRc();
+	*rcz = itsdk_state.sigfox.rcz;
 	if ( rcz > 0 ) return SIGFOX_INIT_SUCESS;
 	return SIGFOX_INIT_PARAMSERR;
 }
@@ -352,7 +353,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getCurrentRcz(uint8_t * rcz) {
 /**
  * Change the transmission power to the given value
  */
-itsdk_sigfox_init_t itsdk_sigfox_setTxPower_ext(uint8_t power, bool force) {
+itsdk_sigfox_init_t itsdk_sigfox_setTxPower_ext(int8_t power, bool force) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_setTxPower_ext\r\n"));
 
 	if ( !force && power == itsdk_state.sigfox.current_power ) return SIGFOX_INIT_NOCHANGE;
@@ -364,7 +365,7 @@ itsdk_sigfox_init_t itsdk_sigfox_setTxPower_ext(uint8_t power, bool force) {
 /**
  * Change the current sigfox network speed
  */
-itsdk_sigfox_init_t itsdk_sigfox_setTxPower(uint8_t power) {
+itsdk_sigfox_init_t itsdk_sigfox_setTxPower(int8_t power) {
 	LOG_DEBUG_SIGFOXSTK(("itsdk_sigfox_setTxPower\r\n"));
 	return itsdk_sigfox_setTxPower_ext(power,false);
 }
@@ -372,7 +373,7 @@ itsdk_sigfox_init_t itsdk_sigfox_setTxPower(uint8_t power) {
 /**
  * Get the current sigfox trasnmision power
  */
-itsdk_sigfox_init_t itsdk_sigfox_getTxPower(uint8_t * power) {
+itsdk_sigfox_init_t itsdk_sigfox_getTxPower(int8_t * power) {
 	LOG_DEBUG_SIGFOXSTK(("itsdk_sigfox_getTxPower\r\n"));
 	*power = itsdk_state.sigfox.current_power;
 	return SIGFOX_INIT_SUCESS;

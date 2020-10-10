@@ -96,6 +96,7 @@ class MCCI_Sigfox {
         void        switchToPublicKey();
         void        switchToPrivateKey();
         void        printSigfoxVersion();
+        int8_t      getTxPower();
 
         // Transmission
         mcci_sigfox_response_e sendBit(boolean bitValue);
