@@ -83,6 +83,11 @@ static uint8_t _itsdk_sigfox_getTxPower() {
 			return 0;
 		}
 	}
+	#ifdef ITSDK_RADIO_MAX_OUTPUT_DBM
+ 	  if ( ITSDK_RADIO_MAX_OUTPUT_DBM < itsdk_state.sigfox.current_power ) {
+		  itsdk_state.sigfox.current_power = ITSDK_RADIO_MAX_OUTPUT_DBM;
+ 	  }
+	#endif
 	return power;
 }
 
@@ -355,7 +360,11 @@ itsdk_sigfox_init_t itsdk_sigfox_getCurrentRcz(uint8_t * rcz) {
  */
 itsdk_sigfox_init_t itsdk_sigfox_setTxPower_ext(int8_t power, bool force) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_setTxPower_ext\r\n"));
-
+	#ifdef ITSDK_RADIO_MAX_OUTPUT_DBM
+ 	  if ( ITSDK_RADIO_MAX_OUTPUT_DBM < power ) {
+		  power = ITSDK_RADIO_MAX_OUTPUT_DBM;
+ 	  }
+	#endif
 	if ( !force && power == itsdk_state.sigfox.current_power ) return SIGFOX_INIT_NOCHANGE;
 	sx1276_sigfox_setPower( power );
 	itsdk_state.sigfox.current_power = power;

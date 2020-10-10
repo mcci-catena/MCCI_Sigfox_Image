@@ -124,7 +124,6 @@ MCCI_Sigfox::MCCI_Sigfox(
     }
     varWrapper_s.region = region;
     varWrapper_s.eepromBase = eepromBase;
-
     this->initFromInternalVars();
 }
 
