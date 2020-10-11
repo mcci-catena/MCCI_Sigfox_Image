@@ -52,7 +52,10 @@ typedef struct {
     // Method to print a log
     void (*printLog)(char * msg);
     // Eeprom baseAddress - reserve 16Bytes for sigfox from this address
-    uint32_t    eepromBase;
+    uint32_t  eepromBase;
+    // Device ID has been setup as encrypted
+    bool      isEncrypted;
+
 } sigfox_api_t;
 
 // Overrided functions

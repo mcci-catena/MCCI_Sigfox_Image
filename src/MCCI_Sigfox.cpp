@@ -42,6 +42,7 @@ struct {
     int8_t    txPower;
     HardwareSerial * logger;
     uint32_t  eepromBase;
+    bool      isEncrypted;
 }  varWrapper_s;
 
 
@@ -81,6 +82,13 @@ extern "C" void _printLog( char * msg ) {
     }
 }
 
+extern "C" unsigned char CREDENTIALS_get_payload_encryption_flag(void) {
+    if ( varWrapper_s.isEncrypted ) {
+        return 1;
+    }
+    return 0;
+}
+
 /** ----------------------------------------------------------------------------------------------------
  *  CONSTRUCTION
  *  ----------------------------------------------------------------------------------------------------
@@ -95,7 +103,8 @@ MCCI_Sigfox::MCCI_Sigfox(
     char *      pac,            // Device pac string, must be 16 hex chars
     char *      key,            // Device key string, muct be 32 hex chars
     uint32_t    region,         // Sigfox region REGION_RCx
-    uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+    uint32_t    eepromBase,     // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+    bool        isEncrypted     // True whan ethe device encryption has been activated
 ) {
     __initOK = false;
 
@@ -124,6 +133,7 @@ MCCI_Sigfox::MCCI_Sigfox(
     }
     varWrapper_s.region = region;
     varWrapper_s.eepromBase = eepromBase;
+    varWrapper_s.isEncrypted = isEncrypted;
     this->initFromInternalVars();
 }
 
@@ -138,7 +148,8 @@ MCCI_Sigfox::MCCI_Sigfox(
     uint8_t  * pac,             // Device Pac in a uint8_t[8]
     uint8_t  * key,             // Device Key in a uint8_t[16]
     uint32_t   region,          // Sigfox region REGION_RCx
-    uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+    uint32_t   eepromBase,      // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+    bool       isEncrypted      // True whan ethe device encryption has been activated
 ) {
     __initOK = false;
     if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 24) ) {
@@ -151,6 +162,7 @@ MCCI_Sigfox::MCCI_Sigfox(
     }
     varWrapper_s.region = region;
     varWrapper_s.eepromBase = eepromBase;
+    varWrapper_s.isEncrypted = isEncrypted;
     this->initFromInternalVars();
 }
 
@@ -159,6 +171,8 @@ MCCI_Sigfox::MCCI_Sigfox(
  */
 MCCI_Sigfox::MCCI_Sigfox(sigfox_api_t * api) {
     sigfoxApiWrapperInUse = api;
+    varWrapper_s.isEncrypted = api->isEncrypted;
+    varWrapper_s.eepromBase = api->eepromBase;
     if ( sigfox_setup(sigfoxApiWrapperInUse) == SIGFOX_INIT_SUCESS ) {
        __initOK = true;
     }
@@ -182,6 +196,7 @@ void MCCI_Sigfox::initFromInternalVars() {
     sigfoxApiWrapper.getTxPower = _getTxPower;
     sigfoxApiWrapper.printLog = _printLog;
     sigfoxApiWrapper.eepromBase = varWrapper_s.eepromBase;
+    sigfoxApiWrapper.isEncrypted = varWrapper_s.isEncrypted;
 
     sigfoxApiWrapperInUse = &sigfoxApiWrapper;
     if ( sigfox_setup(sigfoxApiWrapperInUse) == SIGFOX_INIT_SUCESS ) {
@@ -345,4 +360,3 @@ mcci_sigfox_response_e MCCI_Sigfox::sendFrameWithAck(uint8_t * buffer, uint8_t s
             return MCCSIG_TRANSMIT_ERROR;    
     }
 }
-

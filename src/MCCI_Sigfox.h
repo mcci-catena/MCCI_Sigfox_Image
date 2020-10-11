@@ -69,7 +69,8 @@ class MCCI_Sigfox {
             char *      pac,            // Device pac string, must be 16 hex chars
             char *      key,            // Device key string, muct be 32 hex chars
             uint32_t    region,         // Sigfox region REGION_RCx
-            uint32_t    eepromBase      // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+            uint32_t    eepromBase,     // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+            bool        isEncrypted     // True when the device encryption has been activated
         );
         // Binary init
         MCCI_Sigfox(
@@ -77,7 +78,8 @@ class MCCI_Sigfox {
             uint8_t  * pac,             // Device Pac in a uint8_t[8]
             uint8_t  * key,             // Device Key in a uint8_t[16]
             uint32_t   region,          // Sigfox region REGION_RCx
-            uint32_t   eepromBase       // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+            uint32_t   eepromBase,      // Eprom starting address to store Sigfox Data - reserve 24 Bytes from this one
+            bool       isEncrypted      // True when the device encryption has been activated
         );
         // Full Api init
         MCCI_Sigfox(sigfox_api_t * api);

@@ -220,16 +220,6 @@ itdsk_sigfox_txrx_t itsdk_sigfox_sendFrame(
 	if ( speed == SIGFOX_SPEED_DEFAULT ) speed = _itsdk_sigfox_getSpeed();
 	if ( ack && (dwn == NULL)) return SIGFOX_ERROR_PARAMS;
 
-	#if ( ITSDK_SIGFOX_ENCRYPTION & __PAYLOAD_ENCRYPT_SIGFOX)
-	if ( (encrypt & PAYLOAD_ENCRYPT_SIGFOX) == 0 ) {
-		return SIGFOX_TXRX_ERROR;
-	}
-	#else
-	if ( (encrypt & PAYLOAD_ENCRYPT_SIGFOX) != 0 ) {
-		return SIGFOX_TXRX_ERROR;
-	}
-	#endif
-
 	// Transmit the frame
 	itsdk_sigfox_setTxPower(power);
 	itsdk_sigfox_setTxSpeed(speed);
