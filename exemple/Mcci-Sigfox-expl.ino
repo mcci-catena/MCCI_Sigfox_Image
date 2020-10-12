@@ -48,7 +48,7 @@ sigfox_api_t sigfoxApi = {
   getDeviceKey,           // Sigfox DeviceKEY
   getTxPower,             // Expected transmission power
   printLog,               // Function to print log when activated
-  0x8080010,              // EEPROM base address
+  0x8080004,              // EEPROM base address
   false                   // Enable payload encryption when true - work only with devices configured for encryption
 };
 MCCI_Sigfox Sigfox(&sigfoxApi); 
@@ -62,7 +62,7 @@ MCCI_Sigfox Sigfox(&sigfoxApi);
  * the communication and at the end the EEPROM base address to be used.
  */
 
-MCCI_Sigfox Sigfox( "014158D8", "04484DF3E226F087", "96E0AAC565139E0C9A8278E0DB043A8C", REGION_RC2, 0x8080010,false);  
+MCCI_Sigfox Sigfox( "014158D8", "04484DF3E226F087", "96E0AAC565139E0C9A8278E0DB043A8C", REGION_RC2, 0x8080004,false);  
 
 
 /* ***************************************************************************
@@ -76,7 +76,7 @@ MCCI_Sigfox Sigfox( "014158D8", "04484DF3E226F087", "96E0AAC565139E0C9A8278E0DB0
 /*
 static uint8_t __pac[8] = { 0x04,0x48,0x4D,0xF3,0xE2,0x26,0xF0,0x87 };
 static uint8_t __key[16] = { 0x96,0xE0,0xAA,0xC5,0x65,0x13,0x9E,0x0C,0x9A,0x82,0x78,0xE0,0xDB,0x04,0x3A,0x8C };
-MCCI_Sigfox Sigfox( 0x014158D8, __pac, __key, REGION_RC2, 0x8080010,false);  
+MCCI_Sigfox Sigfox( 0x014158D8, __pac, __key, REGION_RC2, 0x8080004,false);  
 */
 
 

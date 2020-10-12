@@ -27,6 +27,7 @@
 
 #include <it_sdk/itsdk.h>
 #include <drivers/sigfox/sigfox_api.h>
+#include <drivers/sigfox/se_nvm.h>
 #include <it_sdk/eeprom/sdk_state.h>
 #include <it_sdk/eeprom/sdk_config.h>
 #include <it_sdk/logger/error.h>
@@ -487,6 +488,7 @@ void MX_TIM2_Init(void)
 /**
  * Init the harwdare related to Sigfox stack
  * */
+#define NVM_SZ ( ( SFX_SE_NVMEM_BLOCK_SIZE + SFX_NVMEM_BLOCK_SIZE + 4) & 0xFFFC )
 GPIO_TypeDef * getPortFromBankId(uint8_t bankId);
 void init_hardware(uint32_t eepromBase) {
 
@@ -500,11 +502,11 @@ void init_hardware(uint32_t eepromBase) {
 	  }
 	  __eepromWrite(__eepromBase,__eepromMagic);
 	  FLASH->PECR |= FLASH_PECR_PELOCK;
-	  uint8_t zero[12];
-	  bzero(zero,12);
+	  uint8_t zero[NVM_SZ];
+	  bzero(zero,NVM_SZ);
 	  uint32_t offset;
-	  itsdk_sigfox_getSeNvmOffset(&offset);
-	  _eeprom_write(0,offset,zero,20);
+	  itsdk_sigfox_getNvmOffset(&offset);
+	  _eeprom_write(0,offset,zero,NVM_SZ);
   }
 
   // GPIO Irq handler registration
