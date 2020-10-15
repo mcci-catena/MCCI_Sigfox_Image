@@ -200,6 +200,7 @@ void MCCI_Sigfox::initFromInternalVars() {
 
     sigfoxApiWrapperInUse = &sigfoxApiWrapper;
     if ( sigfox_setup(sigfoxApiWrapperInUse) == SIGFOX_INIT_SUCESS ) {
+        itsdk_sigfox_sendOob(SIGFOX_OOB_RC_SYNC,SIGFOX_SPEED_DEFAULT,SIGFOX_POWER_DEFAULT);
        __initOK = true;
     }
 }

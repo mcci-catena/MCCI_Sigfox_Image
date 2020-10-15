@@ -600,7 +600,8 @@ sfx_u8 SE_NVM_get(sfx_u8 read_data[SFX_SE_NVMEM_BLOCK_SIZE])
 	_eeprom_read(ITDT_EEPROM_BANK0, offset, (void *) tab, sz);
 	bcopy(tab,read_data,SFX_SE_NVMEM_BLOCK_SIZE);
 
-	//log_info_array("SE_NVM",read_data,SFX_SE_NVMEM_BLOCK_SIZE);
+log_info("Rd, 0x%08X, %d\r\n",offset,sz);
+log_info_array("SE_NVM",read_data,SFX_SE_NVMEM_BLOCK_SIZE);
 
     return SFX_ERR_NONE;
 }
