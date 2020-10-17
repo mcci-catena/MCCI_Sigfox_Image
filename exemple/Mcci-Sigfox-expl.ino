@@ -79,7 +79,7 @@ static uint8_t __key[16] = { 0x96,0xE0,0xAA,0xC5,0x65,0x13,0x9E,0x0C,0x9A,0x82,0
 MCCI_Sigfox Sigfox( 0x014158D8, __pac, __key, REGION_RC2, 0x8080004,false);  
 */
 
-MCCI_Sigfox Sigfox( "01415DEE", "814890597F820C8A", "5B54ED1A889FC76FC575A3D201482E45", REGION_RC2,0x8080008,true); 
+MCCI_Sigfox Sigfox( "01415DEE", "814890597F820C8A", "5B54ED1A889FC76FC575A3D201482E45", REGION_RC2,0x8080008,false); 
 
 void setup() {
   // put your setup code here, to run once:
