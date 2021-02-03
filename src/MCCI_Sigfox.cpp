@@ -25,6 +25,7 @@
  * ==========================================================
  */
 #include "MCCI_Sigfox.h"
+#include <Catena_Sigfox_wapper.h>
 
 // Key offuscation, this is nothing but better than nothing.
 #define PROTKEY 0xA4
@@ -45,44 +46,50 @@ struct {
     bool      isEncrypted;
 }  varWrapper_s;
 
+MCCI_Catena_Sigfox * const pSigfox = MCCI_Catena_Sigfox::GetInstance();
 
 /**
  * Internal wrapper for the sigfox API
  */
-extern "C" uint8_t _getCurrentRegion(uint32_t * region) {
-   *region = varWrapper_s.region;
+extern "C" uint8_t _getCurrentRegion(sigfox_api_t *pInterface, uint32_t * region) {
+   pSigfox->GetRegion(region);
+   //*region = varWrapper_s.region;
    return 0;
 }
 
 
-extern "C" uint8_t _getDeviceId(uint32_t * devId) {
-   *devId = varWrapper_s.devid;
+extern "C" uint8_t _getDeviceId(sigfox_api_t *pInterface, uint32_t * devId) {
+   // *devId = varWrapper_s.devid;
+   pSigfox->GetDevID((uint8_t*)devId);
    return 0;
 }
 
-extern "C" uint8_t _getInitialPac(uint8_t * pac) {
-  bcopy(varWrapper_s.pac,pac,8);
+extern "C" uint8_t _getInitialPac(sigfox_api_t *pInterface, uint8_t * pac) {
+  // bcopy(varWrapper_s.pac,pac,8);
+   pSigfox->GetPAC(pac);
   return 0;
 }
 
-extern "C" uint8_t _getDeviceKey(uint8_t * key) {
-  for ( int i = 0 ; i < 16 ; i++)
-     key[i] = varWrapper_s.key[i] ^ PROTKEY;
+extern "C" uint8_t _getDeviceKey(sigfox_api_t *pInterface, uint8_t * key) {
+  /*for ( int i = 0 ; i < 16 ; i++)
+     key[i] = varWrapper_s.key[i] ^ PROTKEY;*/
+  pSigfox->GetKey(key);
   return 0;
 }
 
-extern "C" uint8_t _getTxPower(int8_t * power) {
+extern "C" uint8_t _getTxPower(sigfox_api_t *pInterface, int8_t * power) {
   *power = varWrapper_s.txPower;
   return 0;
 }
 
-extern "C" void _printLog( char * msg ) {
+extern "C" void _printLog(sigfox_api_t *pInterface, char * msg ) {
     if( varWrapper_s.logger != NULL ) {
         varWrapper_s.logger->print(msg);
     }
 }
 
 extern "C" unsigned char CREDENTIALS_get_payload_encryption_flag(void) {
+    pSigfox->GetEncryption((uint8_t*)varWrapper_s.isEncrypted);
     if ( varWrapper_s.isEncrypted ) {
         return 1;
     }
@@ -178,12 +185,35 @@ MCCI_Sigfox::MCCI_Sigfox(sigfox_api_t * api) {
     }
 }
 
+/**
+ * Constructor from an api
+ */
+MCCI_Sigfox::MCCI_Sigfox(uint32_t eepromBase) {
+    __initOK = false;
+    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 24) ) {
+        return;
+    }
+    varWrapper_s.eepromBase = eepromBase;
+}
+
+/**
+ * Constructor from an api
+ */
+MCCI_Sigfox::MCCI_Sigfox() {
+    __initOK = false;
+}
+
 
 /**
  * In this init scheme, the settings comes from the internal value and the
  * function wrapper is internal also
  */
 void MCCI_Sigfox::initFromInternalVars() {
+    if (varWrapper_s.region == 0)
+        pSigfox->GetRegion(&varWrapper_s.region);
+
+    if(varWrapper_s.eepromBase == 0)
+        varWrapper_s.eepromBase = 0x8080008;
     // check the region
     if ( !isValidRegion(varWrapper_s.region) ) return;
     varWrapper_s.txPower = DEFAULT_TXPOWER;
@@ -259,6 +289,7 @@ mcci_sigfox_response_e MCCI_Sigfox::setTxPower( int8_t power ) {
 }
 
 boolean MCCI_Sigfox::isReady() {
+    this->initFromInternalVars();
     return __initOK;
 }
 
@@ -307,8 +338,8 @@ void MCCI_Sigfox::printSigfoxVersion() {
     if ( sigfoxApiWrapperInUse->printLog != NULL ) {
         uint8_t * libStr;
         itsdk_sigfox_getSigfoxLibVersion(&libStr);
-        sigfoxApiWrapperInUse->printLog((char *)libStr);
-        sigfoxApiWrapperInUse->printLog("\r\n");
+        sigfoxApiWrapperInUse->printLog(sigfoxApiWrapperInUse, (char *)libStr);
+        sigfoxApiWrapperInUse->printLog(sigfoxApiWrapperInUse, "\r\n");
     }
 }
 

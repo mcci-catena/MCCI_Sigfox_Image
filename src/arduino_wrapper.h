@@ -29,6 +29,11 @@
 #ifndef __ARDUINO_WRAPPER_H__
 #define __ARDUINO_WRAPPER_H__
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+
 #include <it_sdk/sigfox/sigfox.h>
 
 
@@ -37,31 +42,50 @@
 #define ITSDK_SX1276_DIO_4_BANK	 	 		__BANK_B					   // SX1276 GPIO 4 => CAD Detected / Pll lock
 #define ITSDK_SX1276_DIO_4_PIN	 	 		__LP_GPIO_7                    // Not the right configuration @TODO
 
+// forward reference type
+typedef struct sigfox_api_s sigfox_api_t;
+
+// function types
+typedef uint8_t	(sigfox_api_getCurrentRegion_t)(sigfox_api_t *pInterface, uint32_t * region);
+typedef uint8_t (sigfox_api_getDeviceId_t)(sigfox_api_t *pInterface, uint32_t * devId);
+typedef uint8_t (sigfox_api_getInitialPac_t)(sigfox_api_t *pInterface, uint8_t * pac);
+typedef uint8_t (sigfox_api_getDeviceKey_t)(sigfox_api_t *pInterface, uint8_t * key);
+typedef uint8_t (sigfox_api_getTxPower_t)(sigfox_api_t *pInterface, int8_t * power);
+typedef void 	(sigfox_api_printLog_t)(sigfox_api_t *pInterface, char * msg);
+// Return the deviceId into the given parameter
+// Return the PAC parameter: a 8 Bytes array, buffer is provided by the caller
+// Return the KEY parameter: a 16 Bytes array, buffer is provided by the caller
+// Return the Tx power (-127 for zone default)
+// Method to print a log
+
 // Function wrapper
-typedef struct {
+struct sigfox_api_s {
  	// Get the current REGION (based on LoRaWan region) - see config_defines.h
-	uint8_t	(*getCurrentRegion)(uint32_t * region);
+	sigfox_api_getCurrentRegion_t *getCurrentRegion;
 	// Return the deviceId into the given parameter
-	uint8_t (*getDeviceId)(uint32_t * devId);
+	sigfox_api_getDeviceId_t *getDeviceId;
 	// Return the PAC parameter: a 8 Bytes array, buffer is provided by the caller
-	uint8_t (*getInitialPac)(uint8_t * pac);
+	sigfox_api_getInitialPac_t *getInitialPac;
 	// Return the KEY parameter: a 16 Bytes array, buffer is provided by the caller
-	uint8_t (*getDeviceKey)(uint8_t * key);
+	sigfox_api_getDeviceKey_t *getDeviceKey;
 	// Return the Tx power (-127 for zone default)
-	uint8_t (*getTxPower)(int8_t * power);
+	sigfox_api_getTxPower_t *getTxPower;
     // Method to print a log
-    void (*printLog)(char * msg);
+    sigfox_api_printLog_t *printLog;
     // Eeprom baseAddress - reserve 16Bytes for sigfox from this address
     uint32_t  eepromBase;
     // Device ID has been setup as encrypted
     bool      isEncrypted;
-
-} sigfox_api_t;
+};
 
 // Overrided functions
 itsdk_sigfox_init_t sigfox_setup(sigfox_api_t * api);
 void sigfox_loop();
 
 extern sigfox_api_t * __api;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
