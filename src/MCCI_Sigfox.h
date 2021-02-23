@@ -24,6 +24,8 @@
  *
  * ==========================================================
  */
+#ifdef ARDUINO_ARCH_STM32
+
 #ifndef __MCCI_SIGFOX_HXX_
 #define  __MCCI_SIGFOX_HXX_
 #include <Arduino.h>
@@ -128,5 +130,6 @@ class MCCI_Sigfox {
         void      __printLog( char * msg );
 };
 
-
 #endif //  __MCCI_SIGFOX_HXX_
+
+#endif // ARDUINO_ARCH_STM32

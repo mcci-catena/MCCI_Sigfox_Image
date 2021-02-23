@@ -1,3 +1,20 @@
+/*
+
+Module:  Catena_Sigfox_wrapper.h
+
+Function:
+	The wrapper to obtain sigfox parameters from the FRAM
+
+Copyright notice:
+	See accompanying LICENSE file.
+
+Author:
+	Dhinesh Kumar Pitchai, MCCI Corporation	January 2021
+
+*/
+
+#ifdef ARDUINO_ARCH_STM32
+
 #ifndef __CATENA_SIGFOX_WRAPPER_H__
 #define __CATENA_SIGFOX_WRAPPER_H__
 
@@ -110,3 +127,5 @@ private:
 };
 
 #endif
+
+#endif // ARDUINO_ARCH_STM32

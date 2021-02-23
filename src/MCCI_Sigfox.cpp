@@ -24,6 +24,8 @@
  *
  * ==========================================================
  */
+#ifdef ARDUINO_ARCH_STM32
+
 #include "MCCI_Sigfox.h"
 #include <Catena_Sigfox_wapper.h>
 
@@ -52,28 +54,37 @@ MCCI_Catena_Sigfox * const pSigfox = MCCI_Catena_Sigfox::GetInstance();
  * Internal wrapper for the sigfox API
  */
 extern "C" uint8_t _getCurrentRegion(sigfox_api_t *pInterface, uint32_t * region) {
-   pSigfox->GetRegion(region);
-   //*region = varWrapper_s.region;
+   if (varWrapper_s.region == 0)
+        pSigfox->GetRegion(region);
+   else
+        *region = varWrapper_s.region;
    return 0;
 }
 
 
 extern "C" uint8_t _getDeviceId(sigfox_api_t *pInterface, uint32_t * devId) {
-   // *devId = varWrapper_s.devid;
-   pSigfox->GetDevID((uint8_t*)devId);
+   if (varWrapper_s.devid == 0)
+        pSigfox->GetDevID((uint8_t*)devId);
+   else
+        *devId = varWrapper_s.devid;
    return 0;
 }
 
 extern "C" uint8_t _getInitialPac(sigfox_api_t *pInterface, uint8_t * pac) {
-  // bcopy(varWrapper_s.pac,pac,8);
-   pSigfox->GetPAC(pac);
+   if (varWrapper_s.pac == 0)
+        pSigfox->GetPAC(pac);
+   else
+        bcopy(varWrapper_s.pac,pac,8);
   return 0;
 }
 
 extern "C" uint8_t _getDeviceKey(sigfox_api_t *pInterface, uint8_t * key) {
-  /*for ( int i = 0 ; i < 16 ; i++)
-     key[i] = varWrapper_s.key[i] ^ PROTKEY;*/
-  pSigfox->GetKey(key);
+   if (varWrapper_s.devid == 0)
+        pSigfox->GetKey(key);
+   else{
+        for ( int i = 0 ; i < 16 ; i++)
+            key[i] = varWrapper_s.key[i] ^ PROTKEY;
+        }
   return 0;
 }
 
@@ -89,7 +100,9 @@ extern "C" void _printLog(sigfox_api_t *pInterface, char * msg ) {
 }
 
 extern "C" unsigned char CREDENTIALS_get_payload_encryption_flag(void) {
-    pSigfox->GetEncryption((uint8_t*)varWrapper_s.isEncrypted);
+    if (varWrapper_s.devid == 0)
+        pSigfox->GetEncryption((uint8_t*)varWrapper_s.isEncrypted);
+
     if ( varWrapper_s.isEncrypted ) {
         return 1;
     }
@@ -394,3 +407,5 @@ mcci_sigfox_response_e MCCI_Sigfox::sendFrameWithAck(uint8_t * buffer, uint8_t s
             return MCCSIG_TRANSMIT_ERROR;    
     }
 }
+
+#endif // ARDUINO_ARCH_STM32
