@@ -1,3 +1,19 @@
+/*
+
+Module:  Catena_Sigfox_wrapper.cpp
+
+Function:
+	The wrapper to obtain sigfox parameters from the FRAM
+
+Copyright notice:
+	See accompanying LICENSE file.
+
+Author:
+	Dhinesh Kumar Pitchai, MCCI Corporation	January 2021
+
+*/
+
+#ifdef ARDUINO_ARCH_STM32
 
 #include <Catena_Sigfox_wapper.h>
 #include <arduino_wrapper.h>
@@ -156,3 +172,5 @@ bool MCCI_Catena_Sigfox::GetEncryption(
 
     return true;
     }
+
+#endif // ARDUINO_ARCH_STM32
