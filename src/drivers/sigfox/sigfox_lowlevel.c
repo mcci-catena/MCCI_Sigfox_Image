@@ -298,9 +298,15 @@ void STLL_Transmit_DMA_Stop( void )
 	HAL_NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
 
     // Restore the normal SPI configuration
+
+	for (int i = 0 ; i < 16 ; i++ ) {		// wake me up !
+		SX1276Read( 0x00 );
+	}
+
 #if ITSDK_SX1276_SPI == hspi1
 	bzero(&__SPI_HANDLER,sizeof(SPI_HandleTypeDef));
 	MX_SPI1_Init();
+
 #else
 	#error "Please update this part for the use of another spi handler"
 #endif

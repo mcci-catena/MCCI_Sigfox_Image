@@ -242,6 +242,19 @@ void SX1276BoardInit( LoRaBoardCallback_t *callbacks )
     LoRaBoardCallbacks =callbacks;
 }
 
+void SX1276DumpRegisters() {
+    log_info("Dump Sx1276 registers");
+    for ( uint8_t a = 0 ; a < 0x70 ; a++ ) {
+        if ( (a & 0x7) == 0 ) {
+            log_info("\r\n[0x%02X] ",a );
+        }
+        uint8_t v = SX1276Read( a );
+        log_info("%02X ",v);
+    }
+    log_info("\r\n");
+}
+
+
 uint32_t SX1276Init( RadioEvents_t * events )
 {
 	LOG_INFO_SX1276((">> SX1276Init\r\n"));
