@@ -51,7 +51,7 @@ int8_t __itsdk_sigfox_getRealTxPower(int8_t reqPower);
 // helper to get the Rc
 static uint8_t _itsdk_sigfox_getRc()  {
 	uint32_t region;
-	__api->getCurrentRegion(&region);
+	__api->getCurrentRegion(__api, &region);
 	uint8_t rcz;
 	if ( itsdk_sigfox_getRczFromRegion(region,&rcz) != SIGFOX_INIT_SUCESS ) {
 		log_error("Failed to find a valid RC\r\n");
@@ -66,7 +66,7 @@ static uint8_t _itsdk_sigfox_getRc()  {
  */
 static uint8_t _itsdk_sigfox_getTxPower() {
 	int8_t power;
-	__api->getTxPower(&power);
+	__api->getTxPower(__api, &power);
 	if ( power == SIGFOX_DEFAULT_POWER ) {
 		switch (_itsdk_sigfox_getRc()) {
 		case SIGFOX_RCZ1:
@@ -400,7 +400,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getTxSpeed(itdsk_sigfox_speed_t * speed) {
 itsdk_sigfox_init_t itsdk_sigfox_getDeviceId(itsdk_sigfox_device_is_t * devId) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_getDeviceId\r\n"));
 	uint32_t _devId;
-	__api->getDeviceId(&_devId);
+	__api->getDeviceId(__api, &_devId);
 	*devId = (itsdk_sigfox_device_is_t)_devId;
 	return SIGFOX_INIT_SUCESS;
 }
@@ -411,7 +411,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getDeviceId(itsdk_sigfox_device_is_t * devId) {
  */
 itsdk_sigfox_init_t itsdk_sigfox_getInitialPac(uint8_t * pac) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_getInitialPac\r\n"));
-	__api->getInitialPac(pac);
+	__api->getInitialPac(__api, pac);
 	return SIGFOX_INIT_SUCESS;
 }
 
@@ -666,7 +666,7 @@ itsdk_sigfox_init_t itsdk_sigfox_getRczFromRegion(uint32_t region, uint8_t * rcz
  */
 itsdk_sigfox_init_t itsdk_sigfox_getKEY(uint8_t * key) {
 	LOG_INFO_SIGFOXSTK(("itsdk_sigfox_getKEY\r\n"));
-	__api->getDeviceKey(key);
+	__api->getDeviceKey(__api, key);
 	return SIGFOX_INIT_SUCESS;
 }
 

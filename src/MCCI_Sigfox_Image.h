@@ -15,9 +15,10 @@ Copyright and License:
 	See accompanying LICENSE file for copyright and license information.
 
 Author:
-	fullname, MCCI Corporation	September 2020
+	Dhinesh Kumar Pitchai, MCCI Corporation	September 2020
 
 */
+#ifdef ARDUINO_ARCH_STM32
 
 #ifndef _MCCI_Sigfox_Image_h_
 #define _MCCI_Sigfox_Image_h_	/* prevent multiple includes */
@@ -41,3 +42,5 @@ extern "C" {
 #endif
 
 #endif /* _MCCI_Sigfox_Image_h_ */
+
+#endif // ARDUINO_ARCH_STM32

@@ -321,7 +321,7 @@ void serial2_print(char * msg) {}
  * MOCKED? - use a callback function from the end-user level
  * */
 void debug_print(debug_print_type_e lvl, char * msg) {
-	if ( __api != NULL && __api->printLog != NULL ) __api->printLog(msg);
+	if ( __api != NULL && __api->printLog != NULL ) __api->printLog(__api, msg);
 }
 
 /** ***********************************************************************************

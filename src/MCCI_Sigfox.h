@@ -24,6 +24,8 @@
  *
  * ==========================================================
  */
+#ifdef ARDUINO_ARCH_STM32
+
 #ifndef __MCCI_SIGFOX_HXX_
 #define  __MCCI_SIGFOX_HXX_
 #include <Arduino.h>
@@ -84,8 +86,15 @@ class MCCI_Sigfox {
         // Full Api init
         MCCI_Sigfox(sigfox_api_t * api);
 
+        // Full Api init
+        MCCI_Sigfox(uint32_t eepromBase);
+
+        // Full Api init
+        MCCI_Sigfox();
+
         // Update the configuration - only works with non full api initilization
         mcci_sigfox_response_e setLogger( HardwareSerial * serial );
+        // mcci_sigfox_response_e setLogger( USBSerial * serial );
         mcci_sigfox_response_e setTxPower( int8_t power );
         boolean isReady();
 
@@ -121,5 +130,6 @@ class MCCI_Sigfox {
         void      __printLog( char * msg );
 };
 
-
 #endif //  __MCCI_SIGFOX_HXX_
+
+#endif // ARDUINO_ARCH_STM32
