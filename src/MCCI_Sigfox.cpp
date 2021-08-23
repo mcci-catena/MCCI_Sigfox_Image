@@ -71,7 +71,7 @@ extern "C" uint8_t _getDeviceId(sigfox_api_t *pInterface, uint32_t * devId) {
 }
 
 extern "C" uint8_t _getInitialPac(sigfox_api_t *pInterface, uint8_t * pac) {
-   if (varWrapper_s.pac == 0)
+   if (varWrapper_s.devid == 0)
         pSigfox->GetPAC(pac);
    else
         bcopy(varWrapper_s.pac,pac,8);
@@ -407,5 +407,28 @@ mcci_sigfox_response_e MCCI_Sigfox::sendFrameWithAck(uint8_t * buffer, uint8_t s
             return MCCSIG_TRANSMIT_ERROR;    
     }
 }
+
+bool MCCI_Sigfox::sendFrameWithAck_Async(
+	const uint8_t *buffer,
+	uint8_t size,
+	uint8_t * downlinkBuffer,
+	SendFrameCallbackFn_t *pFn,
+	void *pClientData
+	)
+	{
+	// if pFn is null, we can't do anything, so tell the client that no callback
+	// will be called.
+	if (pFn == nullptr)
+		return false;
+
+	// Otherwise we are going to invoke the synchronous API.
+	auto const e = this->sendFrameWithAck((uint8_t*)buffer, size, downlinkBuffer);
+
+	// we now have the result. Call the callback.
+	(*pFn)(pClientData, e);
+
+	// we have invoked the completion, so "the completion has been called or will be called"
+	return true;
+	}
 
 #endif // ARDUINO_ARCH_STM32
