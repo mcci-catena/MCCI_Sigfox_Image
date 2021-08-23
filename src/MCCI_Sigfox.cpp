@@ -24,7 +24,10 @@
  *
  * ==========================================================
  */
+#ifdef ARDUINO_ARCH_STM32
+
 #include "MCCI_Sigfox.h"
+#include <Catena_Sigfox_wapper.h>
 
 // Key offuscation, this is nothing but better than nothing.
 #define PROTKEY 0xA4
@@ -45,44 +48,61 @@ struct {
     bool      isEncrypted;
 }  varWrapper_s;
 
+MCCI_Catena_Sigfox * const pSigfox = MCCI_Catena_Sigfox::GetInstance();
 
 /**
  * Internal wrapper for the sigfox API
  */
-extern "C" uint8_t _getCurrentRegion(uint32_t * region) {
-   *region = varWrapper_s.region;
+extern "C" uint8_t _getCurrentRegion(sigfox_api_t *pInterface, uint32_t * region) {
+   if (varWrapper_s.region == 0)
+        pSigfox->GetRegion(region);
+   else
+        *region = varWrapper_s.region;
    return 0;
 }
 
 
-extern "C" uint8_t _getDeviceId(uint32_t * devId) {
-   *devId = varWrapper_s.devid;
+extern "C" uint8_t _getDeviceId(sigfox_api_t *pInterface, uint32_t * devId) {
+   if (varWrapper_s.devid == 0)
+        pSigfox->GetDevID((uint8_t*)devId);
+   else
+        *devId = varWrapper_s.devid;
    return 0;
 }
 
-extern "C" uint8_t _getInitialPac(uint8_t * pac) {
-  bcopy(varWrapper_s.pac,pac,8);
+extern "C" uint8_t _getInitialPac(sigfox_api_t *pInterface, uint8_t * pac) {
+   if (varWrapper_s.devid == 0)
+        pSigfox->GetPAC(pac);
+   else
+        bcopy(varWrapper_s.pac,pac,8);
   return 0;
 }
 
-extern "C" uint8_t _getDeviceKey(uint8_t * key) {
-  for ( int i = 0 ; i < 16 ; i++)
-     key[i] = varWrapper_s.key[i] ^ PROTKEY;
+extern "C" uint8_t _getDeviceKey(sigfox_api_t *pInterface, uint8_t * key) {
+   if (varWrapper_s.devid == 0)
+        pSigfox->GetKey(key);
+   else{
+        for ( int i = 0 ; i < 16 ; i++)
+            key[i] = varWrapper_s.key[i] ^ PROTKEY;
+        }
   return 0;
 }
 
-extern "C" uint8_t _getTxPower(int8_t * power) {
+extern "C" uint8_t _getTxPower(sigfox_api_t *pInterface, int8_t * power) {
   *power = varWrapper_s.txPower;
   return 0;
 }
 
-extern "C" void _printLog( char * msg ) {
+extern "C" void _printLog(sigfox_api_t *pInterface, char * msg ) {
     if( varWrapper_s.logger != NULL ) {
         varWrapper_s.logger->print(msg);
     }
 }
 
 extern "C" unsigned char CREDENTIALS_get_payload_encryption_flag(void) {
+    if (varWrapper_s.devid == 0)
+        pSigfox->GetEncryption((uint8_t*)varWrapper_s.isEncrypted);
+
     if ( varWrapper_s.isEncrypted ) {
         return 1;
     }
@@ -178,12 +198,35 @@ MCCI_Sigfox::MCCI_Sigfox(sigfox_api_t * api) {
     }
 }
 
+/**
+ * Constructor from an api
+ */
+MCCI_Sigfox::MCCI_Sigfox(uint32_t eepromBase) {
+    __initOK = false;
+    if ( eepromBase < 0x8080000 || eepromBase > (0x8080000 + 6*1024 - 24) ) {
+        return;
+    }
+    varWrapper_s.eepromBase = eepromBase;
+}
+
+/**
+ * Constructor from an api
+ */
+MCCI_Sigfox::MCCI_Sigfox() {
+    __initOK = false;
+}
+
 
 /**
  * In this init scheme, the settings comes from the internal value and the
  * function wrapper is internal also
  */
 void MCCI_Sigfox::initFromInternalVars() {
+    if (varWrapper_s.region == 0)
+        pSigfox->GetRegion(&varWrapper_s.region);
+
+    if(varWrapper_s.eepromBase == 0)
+        varWrapper_s.eepromBase = 0x8080008;
     // check the region
     if ( !isValidRegion(varWrapper_s.region) ) return;
     varWrapper_s.txPower = DEFAULT_TXPOWER;
@@ -259,6 +302,7 @@ mcci_sigfox_response_e MCCI_Sigfox::setTxPower( int8_t power ) {
 }
 
 boolean MCCI_Sigfox::isReady() {
+    this->initFromInternalVars();
     return __initOK;
 }
 
@@ -307,8 +351,8 @@ void MCCI_Sigfox::printSigfoxVersion() {
     if ( sigfoxApiWrapperInUse->printLog != NULL ) {
         uint8_t * libStr;
         itsdk_sigfox_getSigfoxLibVersion(&libStr);
-        sigfoxApiWrapperInUse->printLog((char *)libStr);
-        sigfoxApiWrapperInUse->printLog("\r\n");
+        sigfoxApiWrapperInUse->printLog(sigfoxApiWrapperInUse, (char *)libStr);
+        sigfoxApiWrapperInUse->printLog(sigfoxApiWrapperInUse, "\r\n");
     }
 }
 
@@ -363,3 +407,28 @@ mcci_sigfox_response_e MCCI_Sigfox::sendFrameWithAck(uint8_t * buffer, uint8_t s
             return MCCSIG_TRANSMIT_ERROR;    
     }
 }
+
+bool MCCI_Sigfox::sendFrameWithAck_Async(
+	const uint8_t *buffer,
+	uint8_t size,
+	uint8_t * downlinkBuffer,
+	SendFrameCallbackFn_t *pFn,
+	void *pClientData
+	)
+	{
+	// if pFn is null, we can't do anything, so tell the client that no callback
+	// will be called.
+	if (pFn == nullptr)
+		return false;
+
+	// Otherwise we are going to invoke the synchronous API.
+	auto const e = this->sendFrameWithAck((uint8_t*)buffer, size, downlinkBuffer);
+
+	// we now have the result. Call the callback.
+	(*pFn)(pClientData, e);
+
+	// we have invoked the completion, so "the completion has been called or will be called"
+	return true;
+	}
+
+#endif // ARDUINO_ARCH_STM32

@@ -24,6 +24,8 @@
  *
  * ==========================================================
  */
+#ifdef ARDUINO_ARCH_STM32
+
 #ifndef __MCCI_SIGFOX_HXX_
 #define  __MCCI_SIGFOX_HXX_
 #include <Arduino.h>
@@ -84,8 +86,15 @@ class MCCI_Sigfox {
         // Full Api init
         MCCI_Sigfox(sigfox_api_t * api);
 
+        // Full Api init
+        MCCI_Sigfox(uint32_t eepromBase);
+
+        // Full Api init
+        MCCI_Sigfox();
+
         // Update the configuration - only works with non full api initilization
         mcci_sigfox_response_e setLogger( HardwareSerial * serial );
+        // mcci_sigfox_response_e setLogger( USBSerial * serial );
         mcci_sigfox_response_e setTxPower( int8_t power );
         boolean isReady();
 
@@ -105,6 +114,8 @@ class MCCI_Sigfox {
         mcci_sigfox_response_e sendBitWithAck(boolean bitValue,uint8_t * downlinkBuffer);
         mcci_sigfox_response_e sendFrame(uint8_t * buffer, uint8_t size);
         mcci_sigfox_response_e sendFrameWithAck(uint8_t * buffer, uint8_t size, uint8_t * downlinkBuffer);
+        typedef void (SendFrameCallbackFn_t)(void *pClientData, mcci_sigfox_response_e e);
+	    bool sendFrameWithAck_Async(const uint8_t * buffer, uint8_t size, uint8_t * downlinkBuffer, SendFrameCallbackFn_t *pFn, void *pClientData);
 
     private:
         boolean   __initOK;
@@ -121,5 +132,6 @@ class MCCI_Sigfox {
         void      __printLog( char * msg );
 };
 
-
 #endif //  __MCCI_SIGFOX_HXX_
+
+#endif // ARDUINO_ARCH_STM32
