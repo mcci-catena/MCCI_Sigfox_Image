@@ -114,6 +114,8 @@ class MCCI_Sigfox {
         mcci_sigfox_response_e sendBitWithAck(boolean bitValue,uint8_t * downlinkBuffer);
         mcci_sigfox_response_e sendFrame(uint8_t * buffer, uint8_t size);
         mcci_sigfox_response_e sendFrameWithAck(uint8_t * buffer, uint8_t size, uint8_t * downlinkBuffer);
+        typedef void (SendFrameCallbackFn_t)(void *pClientData, mcci_sigfox_response_e e);
+	    bool sendFrameWithAck_Async(const uint8_t * buffer, uint8_t size, uint8_t * downlinkBuffer, SendFrameCallbackFn_t *pFn, void *pClientData);
 
     private:
         boolean   __initOK;
